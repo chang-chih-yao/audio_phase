@@ -2696,10 +2696,23 @@ if __name__ == '__main__':
     components_info = sort_components_info(components_info)
     components_info = set_components_id(components_info)
 
-    for i in range(len(components_info)):
+    old_component_num = len(components_info)
+    new_block_cou = old_component_num
+    for i in range(old_component_num):
         if components_info[i]['Type'] == 'MIX_2to1':
             print('find')
-
+            mix_2to1_0_name = components_info[i]['Inputs'][0]
+            mix_2to1_1_name = components_info[i]['Inputs'][1]
+            components_info[i]['Inputs'][0] = mix_2to1_0_name + '_new'
+            components_info[i]['Inputs'][1] = mix_2to1_1_name + '_new'
+            tmp_dict_0 = {'Type':'Block', 'IS_REVERSE':False, 'Outputs':[mix_2to1_0_name + '_new'], 'Selects':[], 'Inputs':[mix_2to1_0_name], 'NODE_ID':new_block_cou}
+            tmp_dict_1 = {'Type':'Block', 'IS_REVERSE':False, 'Outputs':[mix_2to1_1_name + '_new'], 'Selects':[], 'Inputs':[mix_2to1_1_name], 'NODE_ID':new_block_cou+1}
+            components_info.append(tmp_dict_0)
+            components_info.append(tmp_dict_1)
+            new_block_cou += 2
+    
+    for item in components_info:
+        print(item)
     exit()
 
     print('output_components_info...')
