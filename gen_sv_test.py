@@ -2700,7 +2700,7 @@ if __name__ == '__main__':
     new_block_cou = old_component_num
     for i in range(old_component_num):
         if components_info[i]['Type'] == 'MIX_2to1':
-            print('find')
+            #print('find')
             mix_2to1_0_name = components_info[i]['Inputs'][0]
             mix_2to1_1_name = components_info[i]['Inputs'][1]
             components_info[i]['Inputs'][0] = mix_2to1_0_name + '_new'
@@ -2713,13 +2713,10 @@ if __name__ == '__main__':
     
     for item in components_info:
         print(item)
-    exit()
 
     print('output_components_info...')
     output_components_info(components_info)
     print('done\n')
-
-    exit()
 
     print('parse_register_file...')
     all_register_info = parse_register_file()
