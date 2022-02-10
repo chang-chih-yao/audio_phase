@@ -2711,8 +2711,8 @@ if __name__ == '__main__':
             components_info.append(tmp_dict_1)
             new_block_cou += 2
     
-    for item in components_info:
-        print(item)
+    # for item in components_info:
+    #     print(item)
 
     print('output_components_info...')
     output_components_info(components_info)
@@ -2831,23 +2831,77 @@ if __name__ == '__main__':
         print('gen_grapth...')
         G, color_map, edge_labels = gen_grapth(components_info)
         print('done\n')
+        
+        input_node_index = []
+        output_node_index = []
+        for i in range(len(components_info)):
+            if components_info[i]['Type'] == 'Input_Node':
+                input_node_index.append(i)
+            if components_info[i]['Type'] == 'Output_Node':
+                output_node_index.append(i)
 
         print(G.nodes)
         phase_node = []
         for i in range(len(components_info)):
-            if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'Input_Node' or components_info[i]['Type'] == 'MIX_2to1' or components_info[i]['Type'] == 'SRC':
+            if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'Input_Node' or components_info[i]['Type'] == 'SRC':
                 print(components_info[i]['Type'])
                 phase_node.append(i)
-        print(phase_node)
-        print(len(phase_node))
+        print('permutation node', phase_node)
+        print('permutation node numbers : ' + str(len(phase_node)))
         per_list = permutations(phase_node, 2)
         
-        my_cou = 0
+        per_has_edge = []
         for item in list(per_list):
             #print(item)
             if nx.has_path(G, item[0], item[1]):
-                my_cou += 1
-        print(my_cou)
+                tmp = [item[0], item[1]]
+                per_has_edge.append(tmp)
+        print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(per_has_edge)))
+
+        #print(per_has_edge)
+
+        find_path_flag = 0
+        find_path = []
+        for i in range(len(per_has_edge)):
+            find_path_flag = 0
+            print(per_has_edge[i][0], per_has_edge[i][1], end=' : ')
+            if components_info[per_has_edge[i][1]]['Type'] == 'Input_Node':
+                for output_node in output_node_index:
+                    if nx.has_path(G, output_node, per_has_edge[i][0]):
+                        tmp_a = nx.shortest_path(G, output_node, per_has_edge[i][0])
+                        tmp_b = nx.shortest_path(G, per_has_edge[i][0], per_has_edge[i][1])
+                        for b in tmp_b:
+                            if tmp_a[-1] == b:
+                                continue
+                            else:
+                                tmp_a.append(b)
+                        find_path.append(tmp_a)
+                        print(tmp_a)
+                        break
+            else:
+                for output_node in output_node_index:
+                    for input_node in input_node_index:
+                        if nx.has_path(G, output_node, per_has_edge[i][0]) and nx.has_path(G, per_has_edge[i][1], input_node):
+                            tmp_a = nx.shortest_path(G, output_node, per_has_edge[i][0])
+                            tmp_b = nx.shortest_path(G, per_has_edge[i][0], per_has_edge[i][1])
+                            tmp_c = nx.shortest_path(G, per_has_edge[i][1], input_node)
+                            for b in tmp_b:
+                                if tmp_a[-1] == b:
+                                    continue
+                                else:
+                                    tmp_a.append(b)
+                            for c in tmp_c:
+                                if tmp_a[-1] == c:
+                                    continue
+                                else:
+                                    tmp_a.append(c)
+                            find_path.append(tmp_a)
+                            print(tmp_a)
+                            find_path_flag = 1
+                            break
+                    if find_path_flag == 1:
+                        break
+
         exit()
 
         if not FOR_SD_CHECK_ONLY:
