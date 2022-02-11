@@ -2687,6 +2687,28 @@ def gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, cho
     wb.remove(wb['Sheet'])
     wb.save(output_file_name)
 
+
+def find_stereo_path(G, components_info, stereo_component_dict, mono):
+    stereo_path = []
+    path_len = 0
+    stereo_output_name = stereo_component_dict[components_info[mono[0]]['Inputs'][0]]
+    for i in range(len(components_info)):
+        if components_info[i]['Inputs'] == [stereo_output_name]:
+            stereo_path.append(i)
+            path_len += 1
+            break
+    
+    stereo_path.append(components_info[stereo_path[-1]]['select'][0])
+    path_len += 1
+
+    while(path_len != len(mono)):
+        next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
+        stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
+        path_len += 1
+
+    print(stereo_path)
+
+
 if __name__ == '__main__':
     ################################################################## main ##################################################################
     components_parsing_rule = get_components_parsing_rule()
@@ -2840,10 +2862,63 @@ if __name__ == '__main__':
             if components_info[i]['Type'] == 'Output_Node':
                 output_node_index.append(i)
 
+        stereo_component_dict = dict()
+        stereo_component_dict['if1_out_0'] = 'if1_out_1'
+        stereo_component_dict['if1_out_1'] = 'if1_out_0'
+        stereo_component_dict['if1_out_2'] = 'if1_out_3'
+        stereo_component_dict['if1_out_3'] = 'if1_out_2'
+        stereo_component_dict['if1_out_4'] = 'if1_out_5'
+        stereo_component_dict['if1_out_5'] = 'if1_out_4'
+        stereo_component_dict['if1_out_6'] = 'if1_out_7'
+        stereo_component_dict['if1_out_7'] = 'if1_out_6'
+        stereo_component_dict['if2_out_0'] = 'if2_out_1'
+        stereo_component_dict['if2_out_1'] = 'if2_out_0'
+        stereo_component_dict['if2_out_2'] = 'if2_out_3'
+        stereo_component_dict['if2_out_3'] = 'if2_out_2'
+        stereo_component_dict['if2_out_4'] = 'if2_out_5'
+        stereo_component_dict['if2_out_5'] = 'if2_out_4'
+        stereo_component_dict['if2_out_6'] = 'if2_out_7'
+        stereo_component_dict['if2_out_7'] = 'if2_out_6'
+        stereo_component_dict['if3_out_0'] = 'if3_out_1'
+        stereo_component_dict['if3_out_1'] = 'if3_out_0'
+        stereo_component_dict['if3_out_2'] = 'if3_out_3'
+        stereo_component_dict['if3_out_3'] = 'if3_out_2'
+        stereo_component_dict['if3_out_4'] = 'if3_out_5'
+        stereo_component_dict['if3_out_5'] = 'if3_out_4'
+        stereo_component_dict['if3_out_6'] = 'if3_out_7'
+        stereo_component_dict['if3_out_7'] = 'if3_out_6'
+        stereo_component_dict['if4_out_r'] = 'if4_out_l'
+        stereo_component_dict['if4_out_l'] = 'if4_out_r'
+        stereo_component_dict['pdm1_dato_ri'] = 'pdm1_dato_fa'
+        stereo_component_dict['pdm1_dato_fa'] = 'pdm1_dato_ri'
+        stereo_component_dict['pdm2_dato_ri'] = 'pdm2_dato_fa'
+        stereo_component_dict['pdm2_dato_fa'] = 'pdm2_dato_ri'
+        stereo_component_dict['dp6_fifo_in0'] = 'dp6_fifo_in1'
+        stereo_component_dict['dp6_fifo_in1'] = 'dp6_fifo_in0'
+        stereo_component_dict['dp6_fifo_in2'] = 'dp6_fifo_in3'
+        stereo_component_dict['dp6_fifo_in3'] = 'dp6_fifo_in2'
+        stereo_component_dict['dp6_fifo_in4'] = 'dp6_fifo_in5'
+        stereo_component_dict['dp6_fifo_in5'] = 'dp6_fifo_in4'
+        stereo_component_dict['dp6_fifo_in6'] = 'dp6_fifo_in7'
+        stereo_component_dict['dp6_fifo_in7'] = 'dp6_fifo_in6'
+        stereo_component_dict['dp4_fifo_in0'] = 'dp4_fifo_in1'
+        stereo_component_dict['dp4_fifo_in1'] = 'dp4_fifo_in0'
+        stereo_component_dict['dp4_fifo_in2'] = 'dp4_fifo_in3'
+        stereo_component_dict['dp4_fifo_in3'] = 'dp4_fifo_in2'
+        stereo_component_dict['dp2_fifo_in0'] = 'dp2_fifo_in1'
+        stereo_component_dict['dp2_fifo_in1'] = 'dp2_fifo_in0'
+        stereo_component_dict['dp10_fifo_in0'] = 'dp10_fifo_in1'
+        stereo_component_dict['dp10_fifo_in1'] = 'dp10_fifo_in0'
+        stereo_component_dict['dp08_fifo_in0'] = 'dp08_fifo_in1'
+        stereo_component_dict['dp08_fifo_in1'] = 'dp08_fifo_in0'
+        stereo_component_dict['dp12_fifo_in0'] = 'dp12_fifo_in1'
+        stereo_component_dict['dp12_fifo_in1'] = 'dp12_fifo_in0'
+
         print(G.nodes)
+
         phase_node = []
         for i in range(len(components_info)):
-            if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'Input_Node' or components_info[i]['Type'] == 'SRC':
+            if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'SRC':
                 print(components_info[i]['Type'])
                 phase_node.append(i)
         print('permutation node', phase_node)
@@ -2864,7 +2939,7 @@ if __name__ == '__main__':
         find_path = []
         for i in range(len(per_has_edge)):
             find_path_flag = 0
-            print(per_has_edge[i][0], per_has_edge[i][1], end=' : ')
+            print('{:>4d}->{:<4d}: '.format(per_has_edge[i][0], per_has_edge[i][1]))
             if components_info[per_has_edge[i][1]]['Type'] == 'Input_Node':
                 for output_node in output_node_index:
                     if nx.has_path(G, output_node, per_has_edge[i][0]):
@@ -2877,6 +2952,7 @@ if __name__ == '__main__':
                                 tmp_a.append(b)
                         find_path.append(tmp_a)
                         print(tmp_a)
+                        find_stereo_path(G, components_info, stereo_component_dict, tmp_a)
                         break
             else:
                 for output_node in output_node_index:
@@ -2897,11 +2973,12 @@ if __name__ == '__main__':
                                     tmp_a.append(c)
                             find_path.append(tmp_a)
                             print(tmp_a)
+                            find_stereo_path(G, components_info, stereo_component_dict, tmp_a)
                             find_path_flag = 1
                             break
                     if find_path_flag == 1:
                         break
-
+        print(len(find_path))
         exit()
 
         if not FOR_SD_CHECK_ONLY:
