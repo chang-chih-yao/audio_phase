@@ -2948,6 +2948,35 @@ if __name__ == '__main__':
                                 continue
                             else:
                                 tmp_a.append(b)
+                        
+                        if len(list(set(tmp_a))) != len(tmp_a):
+                            print('find repeated node')
+                            print(tmp_a)
+                            all_short_0 = [p for p in nx.all_shortest_paths(G, output_node, pn2_has_edge[i][0])]
+                            all_short_1 = [p for p in nx.all_shortest_paths(G, pn2_has_edge[i][0], pn2_has_edge[i][1])]
+                            find_unique_success = False
+                            for a in range(len(all_short_0)):
+                                for b in range(len(all_short_1)):
+                                    tmp_a = all_short_0[a].copy()
+                                    tmp_b = all_short_1[b].copy()
+                                    for b in tmp_b:
+                                        if tmp_a[-1] == b:
+                                            continue
+                                        else:
+                                            tmp_a.append(b)
+                                    if len(list(set(tmp_a))) == len(tmp_a):
+                                        print('GOOD')
+                                        find_unique_success = True
+                                    else:
+                                        print('GG')
+                                        print(nx.has_path(G, output_node, pn2_has_edge[i][1]))
+                            if not find_unique_success:
+                                print(all_short_0)
+                                print(all_short_1)
+                                exit()
+                                
+
+                        
                         print(tmp_a)
                         tmp_a_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_a)
                         find_path.append([tmp_a, tmp_a_stereo])
@@ -3006,31 +3035,36 @@ if __name__ == '__main__':
         print(find_path[largest_indices[0]])
         print(pn2_has_edge)
 
-        delete_idx = []
-        for edge_idx in range(len(pn2_has_edge)):
-            mono_0_path = find_path[largest_indices[0]][0]
-            for mono_0_pre in range(len(mono_0_path)):
-                if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
-                    for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                        if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
-                            print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                            delete_idx.append(edge_idx)
+        for i in range(10):
+            delete_idx = []
+            for edge_idx in range(len(pn2_has_edge)):
+                mono_0_path = find_path[largest_indices[i]][0]
+                for mono_0_pre in range(len(mono_0_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
+                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
+                                print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
 
-            mono_1_path = find_path[largest_indices[0]][1]
-            for mono_1_pre in range(len(mono_1_path)):
-                if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
-                    for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                        if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
-                            print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                            delete_idx.append(edge_idx)
+                mono_1_path = find_path[largest_indices[i]][1]
+                for mono_1_pre in range(len(mono_1_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
+                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
+                                print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
+            
+            tmp_set = set(delete_idx)
+            if len(tmp_set) != len(delete_idx):
+                print('find repeated edge index!!!')
+                print(find_path[largest_indices[i]][0])
+                print(find_path[largest_indices[i]][1])
+                exit()
+
+            print(len(delete_idx))
         
-        tmp_set = set(delete_idx)
-        if len(tmp_set) != len(delete_idx):
-            print('find repeated edge index!!!')
-            exit()
-        
-        for item in delete_idx:
-            del pn2_has_edge[item]
+        # for item in delete_idx:
+        #     del pn2_has_edge[item]
 
         print(pn2_has_edge)
         print(len(pn2_has_edge))
