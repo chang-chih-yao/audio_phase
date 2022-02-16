@@ -2950,30 +2950,38 @@ if __name__ == '__main__':
                                 tmp_a.append(b)
                         
                         if len(list(set(tmp_a))) != len(tmp_a):
-                            print('find repeated node')
-                            print(tmp_a)
-                            all_short_0 = [p for p in nx.all_shortest_paths(G, output_node, pn2_has_edge[i][0])]
-                            all_short_1 = [p for p in nx.all_shortest_paths(G, pn2_has_edge[i][0], pn2_has_edge[i][1])]
-                            find_unique_success = False
-                            for a in range(len(all_short_0)):
-                                for b in range(len(all_short_1)):
-                                    tmp_a = all_short_0[a].copy()
-                                    tmp_b = all_short_1[b].copy()
+                            print('GG')
+                            G_tmp = G.copy()
+                            tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
+                            for delete_a_node in range(len(tmp_a)-1):
+                                G_tmp.remove_node(tmp_a[delete_a_node])
+                            if nx.has_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1]):
+                                #print(tmp_a)
+                                tmp_b = nx.shortest_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                                #print(tmp_b)
+                                for b in tmp_b:
+                                    if tmp_a[-1] == b:
+                                        continue
+                                    else:
+                                        tmp_a.append(b)
+                            else:
+                                G_tmp = G.copy()
+                                tmp_a = nx.shortest_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                                for delete_a_node in range(len(tmp_a)-1):
+                                    G_tmp.remove_node(tmp_a[delete_a_node])
+                                if nx.has_path(G_tmp, output_node, pn2_has_edge[i][0]):
+                                    #print(tmp_a)
+                                    tmp_b = nx.shortest_path(G_tmp, output_node, pn2_has_edge[i][0])
+                                    #print(tmp_b)
                                     for b in tmp_b:
                                         if tmp_a[-1] == b:
                                             continue
                                         else:
                                             tmp_a.append(b)
-                                    if len(list(set(tmp_a))) == len(tmp_a):
-                                        print('GOOD')
-                                        find_unique_success = True
-                                    else:
-                                        print('GG')
-                                        print(nx.has_path(G, output_node, pn2_has_edge[i][1]))
-                            if not find_unique_success:
-                                print(all_short_0)
-                                print(all_short_1)
-                                exit()
+                                else:
+                                    print('GGGGGGGGGGGGGGGGG')
+                                    exit()
+                            
                                 
 
                         
@@ -3024,7 +3032,7 @@ if __name__ == '__main__':
 
 
         ################### pick path(greedy) ###################
-
+        '''
         ranked = np.argsort(find_path_len)
         largest_indices = ranked[::-1]
         print(largest_indices)
@@ -3069,8 +3077,9 @@ if __name__ == '__main__':
         print(pn2_has_edge)
         print(len(pn2_has_edge))
 
-
+        '''
         exit()
+        
 
         if not FOR_SD_CHECK_ONLY:
             SKIP_PROCESS_PATH = False
