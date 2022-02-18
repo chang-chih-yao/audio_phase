@@ -32,8 +32,18 @@ G.add_edge(11, 8)
 G.add_edge(11, 6)
 G.add_edge(8, 7)
 
+G_tmp = G.copy()
+G_tmp.remove_node(11)
+
 print(list(G.nodes))
 print(list(G.edges))
 print(list(nx.simple_cycles(G)))
 for path in nx.all_simple_paths(G, source=0, target=15):
+    print(path)
+
+
+print(list(G_tmp.nodes))
+print(list(G_tmp.edges))
+print(list(nx.simple_cycles(G_tmp)))
+for path in nx.all_simple_paths(G_tmp, source=0, target=15):
     print(path)

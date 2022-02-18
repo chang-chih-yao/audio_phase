@@ -1,3 +1,4 @@
+from pickle import NONE
 import re
 import pandas as pd
 import math
@@ -2707,6 +2708,41 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
     print(stereo_path)
     return stereo_path
 
+def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
+    if node_3==None:
+        PATH_A = [node_0, node_1]
+        PATH_B = [node_1, node_2]
+        path_list = [PATH_A, PATH_B]
+        per_list = permutations(path_list, 2)
+    else:
+        PATH_A = [node_0, node_1]
+        PATH_B = [node_1, node_2]
+        PATH_C = [node_2, node_3]
+        path_list = [PATH_A, PATH_B, PATH_C]
+        per_list = permutations(path_list, 3)
+    
+    for item in list(per_list):
+        print(item)
+
+    G_tmp = G.copy()
+    a = nx.shortest_path(G_tmp, node_0, node_1)
+    for delete_a_node in range(len(a)-1):
+        G_tmp.remove_node(a[delete_a_node])
+    if nx.has_path(G_tmp, node_1, node_2):
+        b = nx.shortest_path(G_tmp, node_1, node_2)
+        mix = a + b[1:]
+    else:
+        G_tmp = G.copy()
+        a = nx.shortest_path(G_tmp, node_1, node_2)
+        for delete_a_node in range(len(a)-1):
+            G_tmp.remove_node(a[delete_a_node])
+        if nx.has_path(G_tmp, node_0, node_1):
+            b = nx.shortest_path(G_tmp, node_0, node_1)
+            mix = a + b[1:]
+        else:
+            print('ERROR')
+            exit()
+    return mix
 
 if __name__ == '__main__':
     ################################################################## main ##################################################################
@@ -2943,53 +2979,19 @@ if __name__ == '__main__':
                     if nx.has_path(G, output_node, pn2_has_edge[i][0]):
                         tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
                         tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                        for b in tmp_b:
-                            if tmp_a[-1] == b:
-                                continue
-                            else:
-                                tmp_a.append(b)
+                        tmp_mix = tmp_a + tmp_b[1:]
                         
-                        if len(list(set(tmp_a))) != len(tmp_a):
+                        if len(list(set(tmp_mix))) != len(tmp_mix):
+                            print(tmp_mix)
                             print('GG')
-                            G_tmp = G.copy()
-                            tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
-                            for delete_a_node in range(len(tmp_a)-1):
-                                G_tmp.remove_node(tmp_a[delete_a_node])
-                            if nx.has_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1]):
-                                #print(tmp_a)
-                                tmp_b = nx.shortest_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                                #print(tmp_b)
-                                for b in tmp_b:
-                                    if tmp_a[-1] == b:
-                                        continue
-                                    else:
-                                        tmp_a.append(b)
-                            else:
-                                G_tmp = G.copy()
-                                tmp_a = nx.shortest_path(G_tmp, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                                for delete_a_node in range(len(tmp_a)-1):
-                                    G_tmp.remove_node(tmp_a[delete_a_node])
-                                if nx.has_path(G_tmp, output_node, pn2_has_edge[i][0]):
-                                    #print(tmp_a)
-                                    tmp_b = nx.shortest_path(G_tmp, output_node, pn2_has_edge[i][0])
-                                    #print(tmp_b)
-                                    for b in tmp_b:
-                                        if tmp_a[-1] == b:
-                                            continue
-                                        else:
-                                            tmp_a.append(b)
-                                else:
-                                    print('GGGGGGGGGGGGGGGGG')
-                                    exit()
+                            tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                            print(tmp_mix)
+                            exit()
                             
-                                
-
-                        
-                        print(tmp_a)
-                        tmp_a_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_a)
-                        find_path.append([tmp_a, tmp_a_stereo])
-                        find_path_len.append(len(tmp_a))
-
+                        print(tmp_mix)
+                        tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                        find_path.append([tmp_mix, tmp_mix_stereo])
+                        find_path_len.append(len(tmp_mix))
                         break
             else:
                 for output_node in output_node_index:
@@ -2998,22 +3000,15 @@ if __name__ == '__main__':
                             tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
                             tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
                             tmp_c = nx.shortest_path(G, pn2_has_edge[i][1], input_node)
-                            for b in tmp_b:
-                                if tmp_a[-1] == b:
-                                    continue
-                                else:
-                                    tmp_a.append(b)
-                            for c in tmp_c:
-                                if tmp_a[-1] == c:
-                                    continue
-                                else:
-                                    tmp_a.append(c)
-                            
-                            print(tmp_a)
-                            tmp_a_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_a)
-                            find_path.append([tmp_a, tmp_a_stereo])
-                            find_path_len.append(len(tmp_a))
+                            tmp_mix = tmp_a + tmp_b[1:] + tmp_c[1:]
 
+                            if len(list(set(tmp_mix))) != len(tmp_mix):
+                                print('QQ')
+                            
+                            print(tmp_mix)
+                            tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                            find_path.append([tmp_mix, tmp_mix_stereo])
+                            find_path_len.append(len(tmp_mix))
                             find_path_flag = 1
                             break
                     if find_path_flag == 1:
