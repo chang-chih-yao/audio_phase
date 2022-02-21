@@ -2701,7 +2701,7 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
             break
 
     while(path_len != len(mono)):
-        print(stereo_path)
+        #print(stereo_path)
         next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
         stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
         path_len += 1
@@ -2714,7 +2714,7 @@ def check_per_path(G, node_0, node_1, node_2, node_3=None):
         PATH_A = [node_0, node_1]
         PATH_B = [node_1, node_2]
         path_list = [PATH_A, PATH_B]
-        per_list = permutations(path_list, 2)
+        per_list = permutations(path_list)
         success_flag = 0
         for item in list(per_list):
             if nx.has_path(G, item[0][0], item[0][1]) and nx.has_path(G, item[1][0], item[1][1]):
@@ -2725,7 +2725,7 @@ def check_per_path(G, node_0, node_1, node_2, node_3=None):
         PATH_B = [node_1, node_2]
         PATH_C = [node_2, node_3]
         path_list = [PATH_A, PATH_B, PATH_C]
-        per_list = permutations(path_list, 3)
+        per_list = permutations(path_list)
         success_flag = 0
         for item in list(per_list):
             if nx.has_path(G, item[0][0], item[0][1]) and nx.has_path(G, item[1][0], item[1][1]) and nx.has_path(G, item[2][0], item[2][1]):
@@ -2742,19 +2742,28 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
         PATH_A = [node_0, node_1]
         PATH_B = [node_1, node_2]
         path_list = [PATH_A, PATH_B]
-        per_list = permutations(path_list, 2)
+        per_list = permutations(path_list)
     else:
         PATH_A = [node_0, node_1]
         PATH_B = [node_1, node_2]
         PATH_C = [node_2, node_3]
         path_list = [PATH_A, PATH_B, PATH_C]
-        per_list = permutations(path_list, 3)
+        per_list = permutations(path_list)
     
     mix = []
     success_flag = 0
+    cou = 0
 
-    for item in list(per_list):
+    per_table = []
+    per = permutations(range(3))
+    for item in per:
+        per_table.append(list(item))
+    per_table_sort = np.argsort(per_table)
+
+    for i, item in enumerate(per_list):
         print(item)
+        print(item[per_table_sort[i][0]], item[per_table_sort[i][1]], item[per_table_sort[i][2]])
+        cou += 1
         G_tmp = G.copy()
         a = nx.shortest_path(G_tmp, item[0][0], item[0][1])
         for delete_a_node in range(len(a)-1):
@@ -2773,7 +2782,9 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
                     mix = a + b[1:] + c[1:]
                     success_flag = 1
                     break
-
+    if cou > 1:
+        print('OMG')
+        print(cou)
     if success_flag == 0:
         print('ERROR')
         exit()
