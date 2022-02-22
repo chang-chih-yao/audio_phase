@@ -2821,12 +2821,37 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
     # if cou > 1:
     #     print('OMG')
     #     print(cou)
-    if success_flag == False or len(list(set(mix))) != len(mix):
+    if success_flag == False or len(set(mix)) != len(mix):
         print('ERROR')
+        a = []
+        b = []
+        c = []
+        for i in nx.all_simple_paths(G, node_0, node_1):
+            a.append(i)
+        print('-------------------------')
+        for i in nx.all_simple_paths(G, node_1, node_2):
+            b.append(i)
+        print('-------------------------')
+        for i in nx.all_simple_paths(G, node_2, node_3):
+            c.append(i)
+        print(len(a), len(b), len(c))
+        tmp_cou = 0
+        for x in a:
+            for y in b:
+                for z in c:
+                    mix = x + y[1:] + z[1:]
+                    if len(set(mix)) == len(mix):
+                        print(mix)
+                        print('find')
+                        break
+            print(tmp_cou)
+            tmp_cou += 1
+        print('not found QQQQ')
         tmp_a = nx.shortest_path(G, node_0, node_1)
         tmp_b = nx.shortest_path(G, node_1, node_2)
         tmp_c = nx.shortest_path(G, node_2, node_3)
         mix = tmp_a + tmp_b[1:] + tmp_c[1:]
+        exit()
 
     
     return success_flag, mix
@@ -3069,7 +3094,7 @@ if __name__ == '__main__':
                         tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
                         tmp_mix = tmp_a + tmp_b[1:]
                         
-                        if len(list(set(tmp_mix))) != len(tmp_mix):
+                        if len(set(tmp_mix)) != len(tmp_mix):
                             #print(tmp_mix)
                             print('GG')
                             #tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
@@ -3091,7 +3116,7 @@ if __name__ == '__main__':
                             tmp_c = nx.shortest_path(G, pn2_has_edge[i][1], input_node)
                             tmp_mix = tmp_a + tmp_b[1:] + tmp_c[1:]
 
-                            if len(list(set(tmp_mix))) != len(tmp_mix):
+                            if len(set(tmp_mix)) != len(tmp_mix):
                                 print(tmp_mix)
                                 print('QQ')
                                 find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node)
