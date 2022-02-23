@@ -29,8 +29,6 @@ import linecache
 import multiprocessing as mp
 from itertools import permutations, combinations
 import numpy as np
-from numba import njit
-from numba.typed import List
 
 ########################## global settings ##########################
 SIGNATURE = '/*********** Howard Auto Gen Tools ***********/\n'
@@ -2711,39 +2709,6 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
     print(stereo_path)
     return stereo_path
 
-@njit
-def for_loop_find_path(mix, a, b, c):
-    flag = False
-    cou = 0
-    for x in a:
-        for y in b:
-            zzz = x + y[1:]
-            if len(set(zzz)) != len(zzz):
-                continue
-            for z in c:
-                tmp = x + y[1:] + z[1:]
-                if len(set(tmp)) == len(tmp):
-                    for i in range(len(tmp)):
-                        mix[i] = tmp[i]
-                    print(tmp)
-                    print('find')
-                    flag = True
-                    break
-            if flag == True:
-                break
-        cou += 1
-        if cou%100 == 0:
-            print(cou)
-        if flag == True:
-            break
-    
-    mix_len = 0
-    for i in mix:
-        if i == -1:
-            break
-        mix_len += 1
-    
-    return mix, mix_len
 
 def check_per_path(G, node_0, node_1, node_2, node_3=None):
     success_flag = True
@@ -3188,6 +3153,27 @@ if __name__ == '__main__':
             print('{:>4d}->{:<4d}: '.format(not_found_path_node[i][0], not_found_path_node[i][1]))
             print('------------------------------------------------------------')
             arr_dict = dict()
+            
+            for input_node in input_node_index:
+                b_c = []
+                b = []
+                c = []
+                for node in nx.all_simple_paths(G, not_found_path_node[i][0], not_found_path_node[i][1]):
+                    b.append(node)
+                for node in nx.all_simple_paths(G, not_found_path_node[i][1], input_node):
+                    c.append(node)
+                for x in b:
+                    for y in c:
+                        tmp_mix = x + y[1:]
+                        if len(set(tmp_mix)) == len(tmp_mix):
+                            b_c.append(tmp_mix)
+                arr_dict[input_node] = b_c
+                print(len(b))
+                print(len(c))
+                print(len(b_c))
+                #print(arr_dict)
+                exit()
+
             for output_node in output_node_index:
                 for input_node in input_node_index:
                     if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
