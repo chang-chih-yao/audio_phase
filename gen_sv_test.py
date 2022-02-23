@@ -29,6 +29,8 @@ import linecache
 import multiprocessing as mp
 from itertools import permutations, combinations
 import numpy as np
+from numba import njit
+from numba.typed import List
 
 ########################## global settings ##########################
 SIGNATURE = '/*********** Howard Auto Gen Tools ***********/\n'
@@ -2709,33 +2711,59 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
     print(stereo_path)
     return stereo_path
 
-def check_per_path(G, node_0, node_1, node_2, node_3=None):
-    if node_3==None:
-        PATH_A = [node_0, node_1]
-        PATH_B = [node_1, node_2]
-        path_list = [PATH_A, PATH_B]
-        per_list = permutations(path_list)
-        success_flag = 0
-        for item in list(per_list):
-            if nx.has_path(G, item[0][0], item[0][1]) and nx.has_path(G, item[1][0], item[1][1]):
-                success_flag = 1
+@njit
+def for_loop_find_path(mix, a, b, c):
+    flag = False
+    cou = 0
+    for x in a:
+        for y in b:
+            zzz = x + y[1:]
+            if len(set(zzz)) != len(zzz):
+                continue
+            for z in c:
+                tmp = x + y[1:] + z[1:]
+                if len(set(tmp)) == len(tmp):
+                    for i in range(len(tmp)):
+                        mix[i] = tmp[i]
+                    print(tmp)
+                    print('find')
+                    flag = True
+                    break
+            if flag == True:
                 break
-    else:
-        PATH_A = [node_0, node_1]
-        PATH_B = [node_1, node_2]
-        PATH_C = [node_2, node_3]
-        path_list = [PATH_A, PATH_B, PATH_C]
-        per_list = permutations(path_list)
-        success_flag = 0
-        for item in list(per_list):
-            if nx.has_path(G, item[0][0], item[0][1]) and nx.has_path(G, item[1][0], item[1][1]) and nx.has_path(G, item[2][0], item[2][1]):
-                success_flag = 1
-                break
+        cou += 1
+        if cou%100 == 0:
+            print(cou)
+        if flag == True:
+            break
     
-    if success_flag == 0:
-        return False
-    else:
-        return True
+    mix_len = 0
+    for i in mix:
+        if i == -1:
+            break
+        mix_len += 1
+    
+    return mix, mix_len
+
+def check_per_path(G, node_0, node_1, node_2, node_3=None):
+    success_flag = True
+    arr = []
+    arr.append(node_0)
+    arr.append(node_1)
+    arr.append(node_2)
+    if node_3 != None:
+        arr.append(node_3)
+
+    for i in range(len(arr)-1):
+        for j in range(i+1, len(arr)):
+            if nx.has_path(G, arr[i], arr[j]):
+                pass
+            else:
+                success_flag = False
+                break
+        if success_flag == False:
+            break
+    return success_flag
 
 def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
     if node_3==None:
@@ -2752,16 +2780,15 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
     
     mix = []
     success_flag = False
-    cou = 0
 
+    per = permutations(range(2))
+    per_table_sort_2 = np.argsort([i for i in per])
     per = permutations(range(3))
-    per_table_sort = np.argsort([i for i in per])
+    per_table_sort_3 = np.argsort([i for i in per])
 
     for i, item in enumerate(per_list):
         #print(item)
         #print(item[per_table_sort[i][0]], item[per_table_sort[i][1]], item[per_table_sort[i][2]])
-        
-        cou += 1
 
         per_pick_nodes = set([y for x in item for y in x])
 
@@ -2770,90 +2797,100 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
         for node in remove_node:
             G_tmp.remove_node(node)
         if nx.has_path(G_tmp, item[0][0], item[0][1]):
-            a = nx.shortest_path(G_tmp, item[0][0], item[0][1])
+            all_path_a = nx.all_shortest_paths(G_tmp, item[0][0], item[0][1])
         else:
             continue
 
-        remove_node = (per_pick_nodes | set(a)) - set([x for x in item[1]])
-        G_tmp = G.copy()
-        for node in remove_node:
-            G_tmp.remove_node(node)
-        if nx.has_path(G_tmp, item[1][0], item[1][1]):
-            b = nx.shortest_path(G_tmp, item[1][0], item[1][1])
-        else:
-            continue
-
-        remove_node = (per_pick_nodes | set(a) | set(b)) - set([x for x in item[2]])
-        G_tmp = G.copy()
-        for node in remove_node:
-            G_tmp.remove_node(node)
-        if nx.has_path(G_tmp, item[2][0], item[2][1]):
-            c = nx.shortest_path(G_tmp, item[2][0], item[2][1])
-            success_flag = True
-            combine_path = [a, b, c]
-            mix = combine_path[per_table_sort[i][0]] + combine_path[per_table_sort[i][1]][1:] + combine_path[per_table_sort[i][2]][1:]
-            break
-        else:
-            continue
-
-
-        '''
-        G_tmp = G.copy()
-        a = nx.shortest_path(G_tmp, item[0][0], item[0][1])
-        for delete_a_node in range(len(a)-1):
-            G_tmp.remove_node(a[delete_a_node])
-        if nx.has_path(G_tmp, item[1][0], item[1][1]):
-            b = nx.shortest_path(G_tmp, item[1][0], item[1][1])
-            if node_3 == None:
-                mix = a + b[1:]
-                success_flag = True
-                break
+        for a in all_path_a:
+            remove_node = (per_pick_nodes | set(a)) - set([x for x in item[1]])
+            G_tmp = G.copy()
+            for node in remove_node:
+                G_tmp.remove_node(node)
+            if nx.has_path(G_tmp, item[1][0], item[1][1]):
+                all_path_b = nx.all_shortest_paths(G_tmp, item[1][0], item[1][1])
             else:
-                for delete_b_node in range(1, len(b)-1):
-                    G_tmp.remove_node(b[delete_b_node])
-                if nx.has_path(G_tmp, item[2][0], item[2][1]):
-                    c = nx.shortest_path(G_tmp, item[2][0], item[2][1])
-                    mix = a + b[1:] + c[1:]
+                continue
+
+            for b in all_path_b:
+                if node_3==None:
+                    combine_path = [a, b]
+                    mix = combine_path[per_table_sort_2[i][0]] + combine_path[per_table_sort_2[i][1]][1:]
                     success_flag = True
                     break
-        '''
+                remove_node = (per_pick_nodes | set(a) | set(b)) - set([x for x in item[2]])
+                G_tmp = G.copy()
+                for node in remove_node:
+                    G_tmp.remove_node(node)
+                if nx.has_path(G_tmp, item[2][0], item[2][1]):
+                    c = nx.shortest_path(G_tmp, item[2][0], item[2][1])
+                    combine_path = [a, b, c]
+                    mix = combine_path[per_table_sort_3[i][0]] + combine_path[per_table_sort_3[i][1]][1:] + combine_path[per_table_sort_3[i][2]][1:]
+                    success_flag = True
+                    break
+            if success_flag == True:
+                    break
 
     # if cou > 1:
     #     print('OMG')
     #     print(cou)
-    if success_flag == False or len(set(mix)) != len(mix):
-        print('ERROR')
-        a = []
-        b = []
-        c = []
-        for i in nx.all_simple_paths(G, node_0, node_1):
-            a.append(i)
-        print('-------------------------')
-        for i in nx.all_simple_paths(G, node_1, node_2):
-            b.append(i)
-        print('-------------------------')
-        for i in nx.all_simple_paths(G, node_2, node_3):
-            c.append(i)
-        print(len(a), len(b), len(c))
-        tmp_cou = 0
-        for x in a:
-            for y in b:
-                for z in c:
-                    mix = x + y[1:] + z[1:]
-                    if len(set(mix)) == len(mix):
-                        print(mix)
-                        print('find')
-                        break
-            print(tmp_cou)
-            tmp_cou += 1
-        print('not found QQQQ')
-        tmp_a = nx.shortest_path(G, node_0, node_1)
-        tmp_b = nx.shortest_path(G, node_1, node_2)
-        tmp_c = nx.shortest_path(G, node_2, node_3)
-        mix = tmp_a + tmp_b[1:] + tmp_c[1:]
-        exit()
-
+    # if success_flag == False or len(set(mix)) != len(mix):
+    #     print('SECOND METHOD NOT FOUND')
     
+    return success_flag, mix
+
+
+def permutation_find_all_paths(G, node_0, node_1, node_2, node_3=None):
+    mix = []
+    a = []
+    b = []
+    c = []
+    for i in nx.all_simple_paths(G, node_0, node_1):
+        a.append(i)
+    for i in nx.all_simple_paths(G, node_1, node_2):
+        b.append(i)
+    for i in nx.all_simple_paths(G, node_2, node_3):
+        c.append(i)
+    #print(len(a), len(b), len(c))
+    
+    # numba_mix = List()
+    # for i in range(999):
+    #     numba_mix.append(-1)
+    # mix, mix_len = for_loop_find_path(numba_mix, a, b, c)
+    # print(mix_len)
+    # result = mix[:mix_len]
+    # print(result)
+    
+    tmp_cou = 0
+    success_flag = False
+
+    for x in a:
+        for y in b:
+            zzz = x + y[1:]
+            if len(set(zzz)) != len(zzz):
+                continue
+            for z in c:
+                mix = x + y[1:] + z[1:]
+                if len(set(mix)) == len(mix):
+                    print(mix)
+                    print('THIRD METHOD find !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                    success_flag = True
+                    break
+            if success_flag == True:
+                break
+        # if tmp_cou%1000 == 0:
+        #     print(tmp_cou)
+        tmp_cou += 1
+        if success_flag == True:
+            break
+    
+    # if success_flag == False:
+    #     print('not found QQQQQQQQ')
+    
+    tmp_a = nx.shortest_path(G, node_0, node_1)
+    tmp_b = nx.shortest_path(G, node_1, node_2)
+    tmp_c = nx.shortest_path(G, node_2, node_3)
+    mix = tmp_a + tmp_b[1:] + tmp_c[1:]
+
     return success_flag, mix
 
 if __name__ == '__main__':
@@ -3084,6 +3121,7 @@ if __name__ == '__main__':
         find_path = []
         find_path_len = []
         fail_num = 0
+        not_found_path_node = []
         for i in range(len(pn2_has_edge)):
             find_path_flag = False
             print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]))
@@ -3097,9 +3135,9 @@ if __name__ == '__main__':
                         if len(set(tmp_mix)) != len(tmp_mix):
                             #print(tmp_mix)
                             print('GG')
-                            #tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                            #print(tmp_mix)
-                            #exit()
+                            find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                            if find_path_flag == False:
+                                continue
                             
                         print(tmp_mix)
                         tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
@@ -3110,6 +3148,7 @@ if __name__ == '__main__':
             else:
                 for output_node in output_node_index:
                     for input_node in input_node_index:
+                        #print('Try ', output_node, input_node)
                         if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node):
                             tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
                             tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
@@ -3117,8 +3156,8 @@ if __name__ == '__main__':
                             tmp_mix = tmp_a + tmp_b[1:] + tmp_c[1:]
 
                             if len(set(tmp_mix)) != len(tmp_mix):
-                                print(tmp_mix)
-                                print('QQ')
+                                #print(tmp_mix)
+                                #print('QQ')
                                 find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node)
                                 if find_path_flag == False:
                                     continue
@@ -3134,12 +3173,48 @@ if __name__ == '__main__':
 
             if find_path_flag == False:
                 print('FAIL !!! some shortest path of pn2_has_edge not found')
+                not_found_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
                 fail_num += 1
                 #exit()
         
         print('path number :', len(find_path))
         print(fail_num)
+        print(not_found_path_node)
         
+        #################### non Input_Node pair ####################
+
+        for i in range(len(not_found_path_node)):
+            find_path_flag = False
+            print('{:>4d}->{:<4d}: '.format(not_found_path_node[i][0], not_found_path_node[i][1]))
+            print('------------------------------------------------------------')
+            arr_dict = dict()
+            for output_node in output_node_index:
+                for input_node in input_node_index:
+                    if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
+                        print('Try ', output_node, input_node)
+                        find_path_flag, tmp_mix = permutation_find_all_paths(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node)
+                        if find_path_flag == False:
+                            continue
+                        print(tmp_mix)
+                        tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                        find_path.append([tmp_mix, tmp_mix_stereo])
+                        find_path_len.append(len(tmp_mix))
+                        find_path_flag = True
+                        break
+                if find_path_flag == True:
+                    break
+            exit()
+            if find_path_flag == False:
+                print('illegal path : ', end='')
+                print('{:>4d}->{:<4d}: '.format(not_found_path_node[i][0], not_found_path_node[i][1]))
+
+        
+
+        #################### Input_Node pair ####################
+
+        # ????????????
+
+
 
 
         ################### check illegal path ###################
