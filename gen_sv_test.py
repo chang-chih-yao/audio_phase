@@ -3168,17 +3168,36 @@ if __name__ == '__main__':
                         if len(set(tmp_mix)) == len(tmp_mix):
                             b_c.append(tmp_mix)
                 arr_dict[input_node] = b_c
-                print(len(b))
-                print(len(c))
-                print(len(b_c))
-                #print(arr_dict)
-                exit()
+                # print(len(b))
+                # print(len(c))
+                # print(len(b_c))
+                # exit()
+            for item in arr_dict:
+                print(item, len(arr_dict[item]))
 
             for output_node in output_node_index:
+                a = []
+                for node in nx.all_simple_paths(G, output_node, not_found_path_node[i][0]):
+                    a.append(node)
+                print('len(a)', len(a))
                 for input_node in input_node_index:
                     if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
                         print('Try ', output_node, input_node)
-                        find_path_flag, tmp_mix = permutation_find_all_paths(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node)
+                        tmp_mix = []
+                        #find_path_flag, tmp_mix = permutation_find_all_paths(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node)
+                        cou = 0
+                        for x in a:
+                            for y in arr_dict[input_node]:
+                                tmp_mix = x + y[1:]
+                                if len(set(tmp_mix)) == len(tmp_mix):
+                                    print('find !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+                                    find_path_flag = True
+                                    break
+                            cou += 1
+                            if cou%100 == 0:
+                                print(cou)
+                            if find_path_flag == True:
+                                break
                         if find_path_flag == False:
                             continue
                         print(tmp_mix)
