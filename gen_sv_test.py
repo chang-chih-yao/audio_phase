@@ -29,6 +29,8 @@ import linecache
 import multiprocessing as mp
 from itertools import permutations, combinations
 import numpy as np
+import time
+from difflib import SequenceMatcher
 
 ########################## global settings ##########################
 SIGNATURE = '/*********** Howard Auto Gen Tools ***********/\n'
@@ -2702,9 +2704,21 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
 
     while(path_len != len(mono)):
         #print(stereo_path)
+        if components_info[stereo_path[-1]]['Type'].find('MUX') != -1:
+            mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
+            next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
+            if mono_component_selects != next_component_selects:
+                print(mono_component_selects, next_component_selects)
+                print('MUX sel diff !!!!!!!!!!!!!!')
         next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
+        # mono_component_name = components_info[mono[path_len-1]]['Inputs'][next_sel_index]
+        # next_component_name = components_info[stereo_path[-1]]['Inputs'][next_sel_index]
         stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
         path_len += 1
+
+    if len(set(mono+stereo_path)) != len(mono+stereo_path):
+        print('stereo path ERROR')
+        exit()
 
     print(stereo_path)
     return stereo_path
@@ -3144,6 +3158,7 @@ if __name__ == '__main__':
         
         print('path number :', len(find_path))
         print(fail_num)
+        # not_found_path_node = [[203,201]]        # test legal path
         print(not_found_path_node)
         
         #################### non Input_Node pair ####################
@@ -3153,49 +3168,49 @@ if __name__ == '__main__':
             print('{:>4d}->{:<4d}: '.format(not_found_path_node[i][0], not_found_path_node[i][1]))
             print('------------------------------------------------------------')
             arr_dict = dict()
-            
-            for input_node in input_node_index:
-                b_c = []
+            start_time = time.time()
+            for output_node in output_node_index:
+                a_b = []
+                a = []
                 b = []
-                c = []
-                for node in nx.all_simple_paths(G, not_found_path_node[i][0], not_found_path_node[i][1]):
-                    b.append(node)
-                for node in nx.all_simple_paths(G, not_found_path_node[i][1], input_node):
-                    c.append(node)
-                for x in b:
-                    for y in c:
-                        tmp_mix = x + y[1:]
-                        if len(set(tmp_mix)) == len(tmp_mix):
-                            b_c.append(tmp_mix)
-                arr_dict[input_node] = b_c
-                # print(len(b))
-                # print(len(c))
-                # print(len(b_c))
-                # exit()
+                if nx.has_path(G, output_node, not_found_path_node[i][0]) and nx.has_path(G, not_found_path_node[i][0], not_found_path_node[i][1]):
+                    for node in nx.all_simple_paths(G, output_node, not_found_path_node[i][0]):
+                        a.append(node)
+                    for node in nx.all_simple_paths(G, not_found_path_node[i][0], not_found_path_node[i][1]):
+                        b.append(node)
+                    for x in a:
+                        for y in b:
+                            tmp_mix = x + y[1:]
+                            if len(set(tmp_mix)) == len(tmp_mix):
+                                a_b.append(tmp_mix)
+                arr_dict[output_node] = a_b
             for item in arr_dict:
                 print(item, len(arr_dict[item]))
 
+            print(str(time.time() - start_time) + ' sec')
+
             for output_node in output_node_index:
-                a = []
-                for node in nx.all_simple_paths(G, output_node, not_found_path_node[i][0]):
-                    a.append(node)
-                print('len(a)', len(a))
                 for input_node in input_node_index:
                     if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
                         print('Try ', output_node, input_node)
+                        if len(arr_dict[output_node]) == 0:
+                            continue
                         tmp_mix = []
+                        c = []
+                        for node in nx.all_simple_paths(G, not_found_path_node[i][1], input_node):
+                            c.append(node)
                         #find_path_flag, tmp_mix = permutation_find_all_paths(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node)
                         cou = 0
-                        for x in a:
-                            for y in arr_dict[input_node]:
+                        for x in arr_dict[output_node]:
+                            for y in c:
                                 tmp_mix = x + y[1:]
                                 if len(set(tmp_mix)) == len(tmp_mix):
                                     print('find !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                                     find_path_flag = True
                                     break
                             cou += 1
-                            if cou%100 == 0:
-                                print(cou)
+                            # if cou%100 == 0:
+                            #     print(cou)
                             if find_path_flag == True:
                                 break
                         if find_path_flag == False:
@@ -3208,10 +3223,10 @@ if __name__ == '__main__':
                         break
                 if find_path_flag == True:
                     break
-            exit()
+            #exit()
             if find_path_flag == False:
                 print('illegal path : ', end='')
-                print('{:>4d}->{:<4d}: '.format(not_found_path_node[i][0], not_found_path_node[i][1]))
+                print('{:>4d}->{:<4d}'.format(not_found_path_node[i][0], not_found_path_node[i][1]))
 
         
 
