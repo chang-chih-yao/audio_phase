@@ -2692,9 +2692,108 @@ def gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, cho
     wb.save(output_file_name)
 
 
-def find_stereo_path(G, components_info, stereo_component_dict, mono):
+
+
+
+
+
+
+
+
+
+def gen_stereo_componenet_dict():
+    stereo_component_dict = dict()
+    stereo_component_dict['if1_out_0'] = 'if1_out_1'
+    stereo_component_dict['if1_out_1'] = 'if1_out_0'
+    stereo_component_dict['if1_out_2'] = 'if1_out_3'
+    stereo_component_dict['if1_out_3'] = 'if1_out_2'
+    stereo_component_dict['if1_out_4'] = 'if1_out_5'
+    stereo_component_dict['if1_out_5'] = 'if1_out_4'
+    stereo_component_dict['if1_out_6'] = 'if1_out_7'
+    stereo_component_dict['if1_out_7'] = 'if1_out_6'
+    stereo_component_dict['if2_out_0'] = 'if2_out_1'
+    stereo_component_dict['if2_out_1'] = 'if2_out_0'
+    stereo_component_dict['if2_out_2'] = 'if2_out_3'
+    stereo_component_dict['if2_out_3'] = 'if2_out_2'
+    stereo_component_dict['if2_out_4'] = 'if2_out_5'
+    stereo_component_dict['if2_out_5'] = 'if2_out_4'
+    stereo_component_dict['if2_out_6'] = 'if2_out_7'
+    stereo_component_dict['if2_out_7'] = 'if2_out_6'
+    stereo_component_dict['if3_out_0'] = 'if3_out_1'
+    stereo_component_dict['if3_out_1'] = 'if3_out_0'
+    stereo_component_dict['if3_out_2'] = 'if3_out_3'
+    stereo_component_dict['if3_out_3'] = 'if3_out_2'
+    stereo_component_dict['if3_out_4'] = 'if3_out_5'
+    stereo_component_dict['if3_out_5'] = 'if3_out_4'
+    stereo_component_dict['if3_out_6'] = 'if3_out_7'
+    stereo_component_dict['if3_out_7'] = 'if3_out_6'
+    stereo_component_dict['if4_out_r'] = 'if4_out_l'
+    stereo_component_dict['if4_out_l'] = 'if4_out_r'
+    stereo_component_dict['pdm1_dato_ri'] = 'pdm1_dato_fa'
+    stereo_component_dict['pdm1_dato_fa'] = 'pdm1_dato_ri'
+    stereo_component_dict['pdm2_dato_ri'] = 'pdm2_dato_fa'
+    stereo_component_dict['pdm2_dato_fa'] = 'pdm2_dato_ri'
+    stereo_component_dict['dp6_fifo_in0'] = 'dp6_fifo_in1'
+    stereo_component_dict['dp6_fifo_in1'] = 'dp6_fifo_in0'
+    stereo_component_dict['dp6_fifo_in2'] = 'dp6_fifo_in3'
+    stereo_component_dict['dp6_fifo_in3'] = 'dp6_fifo_in2'
+    stereo_component_dict['dp6_fifo_in4'] = 'dp6_fifo_in5'
+    stereo_component_dict['dp6_fifo_in5'] = 'dp6_fifo_in4'
+    stereo_component_dict['dp6_fifo_in6'] = 'dp6_fifo_in7'
+    stereo_component_dict['dp6_fifo_in7'] = 'dp6_fifo_in6'
+    stereo_component_dict['dp4_fifo_in0'] = 'dp4_fifo_in1'
+    stereo_component_dict['dp4_fifo_in1'] = 'dp4_fifo_in0'
+    stereo_component_dict['dp4_fifo_in2'] = 'dp4_fifo_in3'
+    stereo_component_dict['dp4_fifo_in3'] = 'dp4_fifo_in2'
+    stereo_component_dict['dp2_fifo_in0'] = 'dp2_fifo_in1'
+    stereo_component_dict['dp2_fifo_in1'] = 'dp2_fifo_in0'
+    stereo_component_dict['dp10_fifo_in0'] = 'dp10_fifo_in1'
+    stereo_component_dict['dp10_fifo_in1'] = 'dp10_fifo_in0'
+    stereo_component_dict['dp08_fifo_in0'] = 'dp08_fifo_in1'
+    stereo_component_dict['dp08_fifo_in1'] = 'dp08_fifo_in0'
+    stereo_component_dict['dp12_fifo_in0'] = 'dp12_fifo_in1'
+    stereo_component_dict['dp12_fifo_in1'] = 'dp12_fifo_in0'
+
+    stereo_component_dict['i2s1_in_ch0'] = 'i2s1_in_ch1'
+    stereo_component_dict['i2s1_in_ch1'] = 'i2s1_in_ch0'
+    stereo_component_dict['i2s1_in_ch2'] = 'i2s1_in_ch3'
+    stereo_component_dict['i2s1_in_ch3'] = 'i2s1_in_ch2'
+    stereo_component_dict['i2s1_in_ch4'] = 'i2s1_in_ch5'
+    stereo_component_dict['i2s1_in_ch5'] = 'i2s1_in_ch4'
+    stereo_component_dict['i2s1_in_ch6'] = 'i2s1_in_ch7'
+    stereo_component_dict['i2s1_in_ch7'] = 'i2s1_in_ch6'
+    stereo_component_dict['i2s2_in_ch0'] = 'i2s2_in_ch1'
+    stereo_component_dict['i2s2_in_ch1'] = 'i2s2_in_ch0'
+    stereo_component_dict['i2s2_in_ch2'] = 'i2s2_in_ch3'
+    stereo_component_dict['i2s2_in_ch3'] = 'i2s2_in_ch2'
+    stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_fa'
+    stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_ri'
+    stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_fa'
+    stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_ri'
+    stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_fa'
+    stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_ri'
+    stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_fa'
+    stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_ri'
+    stereo_component_dict['i2s3_in_ch0'] = 'i2s3_in_ch1'
+    stereo_component_dict['i2s3_in_ch1'] = 'i2s3_in_ch0'
+    stereo_component_dict['i2s4_in_ch0'] = 'i2s4_in_ch1'
+    stereo_component_dict['i2s4_in_ch1'] = 'i2s4_in_ch0'
+    stereo_component_dict['sdm_09_l'] = 'sdm_09_r'
+    stereo_component_dict['sdm_09_r'] = 'sdm_09_l'
+    stereo_component_dict['sdm_08_l'] = 'sdm_08_r'
+    stereo_component_dict['sdm_08_r'] = 'sdm_08_l'
+    stereo_component_dict['sdw_dp_1_ch0'] = 'sdw_dp_1_ch1'
+    stereo_component_dict['sdw_dp_1_ch1'] = 'sdw_dp_1_ch0'
+    stereo_component_dict['sdw_dp_1_ch2'] = 'sdw_dp_1_ch3'
+    stereo_component_dict['sdw_dp_1_ch3'] = 'sdw_dp_1_ch2'
+    
+    return stereo_component_dict
+
+
+def find_stereo_path(G, components_info, input_node_index, stereo_component_dict, mono):
     stereo_path = []
     path_len = 0
+    success_flag = True
     stereo_output_name = stereo_component_dict[components_info[mono[0]]['Inputs'][0]]   # find stereo output node name
     for i in range(len(components_info)):
         if components_info[i]['Inputs'] == [stereo_output_name]:
@@ -2703,25 +2802,47 @@ def find_stereo_path(G, components_info, stereo_component_dict, mono):
             break
 
     while(path_len != len(mono)):
-        #print(stereo_path)
-        if components_info[stereo_path[-1]]['Type'].find('MUX') != -1:
-            mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
-            next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
-            if mono_component_selects != next_component_selects:
-                print(mono_component_selects, next_component_selects)
-                print('MUX sel diff !!!!!!!!!!!!!!')
-        next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
-        # mono_component_name = components_info[mono[path_len-1]]['Inputs'][next_sel_index]
-        # next_component_name = components_info[stereo_path[-1]]['Inputs'][next_sel_index]
-        stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
-        path_len += 1
+        try:
+            #print(stereo_path)
+            if components_info[stereo_path[-1]]['Type'].find('MUX') != -1:
+                mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
+                next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
+                if mono_component_selects != next_component_selects:
+                    print(mono_component_selects, next_component_selects)
+                    print('MUX sel diff !')
+                    next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
+                    next_node_index = components_info[stereo_path[-1]]['select'][next_sel_index]
+                    if next_node_index in input_node_index:            # this node is end of path -> break while loop
+                        stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
+                        break
+                    else:
+                        print('illegal :  MUX sel diff !!!!!!!!!!!!!!')
+                        success_flag = False
+                        break
+            next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
+            # mono_component_name = components_info[mono[path_len-1]]['Inputs'][next_sel_index]
+            # next_component_name = components_info[stereo_path[-1]]['Inputs'][next_sel_index]
+            stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
+            path_len += 1
+        except:
+            success_flag = False
+            break
 
-    if len(set(mono+stereo_path)) != len(mono+stereo_path):
+    if success_flag == False:
         print('stereo path ERROR')
+        print(stereo_path)
         exit()
 
+    if len(set(mono+stereo_path)) != len(mono+stereo_path):
+        for item in (set(mono) & set(stereo_path)):
+            if item not in input_node_index:
+                print('Stereo path found repeated node not in input_node list !!!!')
+                success_flag = False
+                exit()
+        #exit()
+
     print(stereo_path)
-    return stereo_path
+    return success_flag, stereo_path
 
 
 def check_per_path(G, node_0, node_1, node_2, node_3=None):
@@ -3023,57 +3144,7 @@ if __name__ == '__main__':
             if components_info[i]['Type'] == 'Output_Node':
                 output_node_index.append(i)
 
-        stereo_component_dict = dict()
-        stereo_component_dict['if1_out_0'] = 'if1_out_1'
-        stereo_component_dict['if1_out_1'] = 'if1_out_0'
-        stereo_component_dict['if1_out_2'] = 'if1_out_3'
-        stereo_component_dict['if1_out_3'] = 'if1_out_2'
-        stereo_component_dict['if1_out_4'] = 'if1_out_5'
-        stereo_component_dict['if1_out_5'] = 'if1_out_4'
-        stereo_component_dict['if1_out_6'] = 'if1_out_7'
-        stereo_component_dict['if1_out_7'] = 'if1_out_6'
-        stereo_component_dict['if2_out_0'] = 'if2_out_1'
-        stereo_component_dict['if2_out_1'] = 'if2_out_0'
-        stereo_component_dict['if2_out_2'] = 'if2_out_3'
-        stereo_component_dict['if2_out_3'] = 'if2_out_2'
-        stereo_component_dict['if2_out_4'] = 'if2_out_5'
-        stereo_component_dict['if2_out_5'] = 'if2_out_4'
-        stereo_component_dict['if2_out_6'] = 'if2_out_7'
-        stereo_component_dict['if2_out_7'] = 'if2_out_6'
-        stereo_component_dict['if3_out_0'] = 'if3_out_1'
-        stereo_component_dict['if3_out_1'] = 'if3_out_0'
-        stereo_component_dict['if3_out_2'] = 'if3_out_3'
-        stereo_component_dict['if3_out_3'] = 'if3_out_2'
-        stereo_component_dict['if3_out_4'] = 'if3_out_5'
-        stereo_component_dict['if3_out_5'] = 'if3_out_4'
-        stereo_component_dict['if3_out_6'] = 'if3_out_7'
-        stereo_component_dict['if3_out_7'] = 'if3_out_6'
-        stereo_component_dict['if4_out_r'] = 'if4_out_l'
-        stereo_component_dict['if4_out_l'] = 'if4_out_r'
-        stereo_component_dict['pdm1_dato_ri'] = 'pdm1_dato_fa'
-        stereo_component_dict['pdm1_dato_fa'] = 'pdm1_dato_ri'
-        stereo_component_dict['pdm2_dato_ri'] = 'pdm2_dato_fa'
-        stereo_component_dict['pdm2_dato_fa'] = 'pdm2_dato_ri'
-        stereo_component_dict['dp6_fifo_in0'] = 'dp6_fifo_in1'
-        stereo_component_dict['dp6_fifo_in1'] = 'dp6_fifo_in0'
-        stereo_component_dict['dp6_fifo_in2'] = 'dp6_fifo_in3'
-        stereo_component_dict['dp6_fifo_in3'] = 'dp6_fifo_in2'
-        stereo_component_dict['dp6_fifo_in4'] = 'dp6_fifo_in5'
-        stereo_component_dict['dp6_fifo_in5'] = 'dp6_fifo_in4'
-        stereo_component_dict['dp6_fifo_in6'] = 'dp6_fifo_in7'
-        stereo_component_dict['dp6_fifo_in7'] = 'dp6_fifo_in6'
-        stereo_component_dict['dp4_fifo_in0'] = 'dp4_fifo_in1'
-        stereo_component_dict['dp4_fifo_in1'] = 'dp4_fifo_in0'
-        stereo_component_dict['dp4_fifo_in2'] = 'dp4_fifo_in3'
-        stereo_component_dict['dp4_fifo_in3'] = 'dp4_fifo_in2'
-        stereo_component_dict['dp2_fifo_in0'] = 'dp2_fifo_in1'
-        stereo_component_dict['dp2_fifo_in1'] = 'dp2_fifo_in0'
-        stereo_component_dict['dp10_fifo_in0'] = 'dp10_fifo_in1'
-        stereo_component_dict['dp10_fifo_in1'] = 'dp10_fifo_in0'
-        stereo_component_dict['dp08_fifo_in0'] = 'dp08_fifo_in1'
-        stereo_component_dict['dp08_fifo_in1'] = 'dp08_fifo_in0'
-        stereo_component_dict['dp12_fifo_in0'] = 'dp12_fifo_in1'
-        stereo_component_dict['dp12_fifo_in1'] = 'dp12_fifo_in0'
+        stereo_component_dict = gen_stereo_componenet_dict()
 
         print(G.nodes)
 
@@ -3101,6 +3172,8 @@ if __name__ == '__main__':
         find_path_len = []
         fail_num = 0
         not_found_path_node = []
+        illegal_stereo_path_node = []
+        
         for i in range(len(pn2_has_edge)):
             find_path_flag = False
             print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]))
@@ -3119,7 +3192,10 @@ if __name__ == '__main__':
                                 continue
                             
                         print(tmp_mix)
-                        tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                        if find_path_flag == False:
+                            illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                            continue
                         find_path.append([tmp_mix, tmp_mix_stereo])
                         find_path_len.append(len(tmp_mix))
                         find_path_flag = True
@@ -3142,7 +3218,10 @@ if __name__ == '__main__':
                                     continue
                             
                             print(tmp_mix)
-                            tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                            find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                            if find_path_flag == False:
+                                illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                                continue
                             find_path.append([tmp_mix, tmp_mix_stereo])
                             find_path_len.append(len(tmp_mix))
                             find_path_flag = True
