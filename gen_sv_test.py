@@ -2826,10 +2826,10 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
             path_len += 1
         except:
             success_flag = False
+            print('find stereo path ERROR')
             break
 
     if success_flag == False:
-        print('stereo path ERROR')
         print(stereo_path)
         exit()
 
