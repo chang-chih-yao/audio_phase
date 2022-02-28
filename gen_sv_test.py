@@ -2831,14 +2831,14 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
 
     if success_flag == False:
         print(stereo_path)
-        exit()
+        #exit()
 
     if len(set(mono+stereo_path)) != len(mono+stereo_path):
         for item in (set(mono) & set(stereo_path)):
             if item not in input_node_index:
                 print('Stereo path found repeated node not in input_node list !!!!')
                 success_flag = False
-                exit()
+                #exit()
         #exit()
 
     print(stereo_path)
@@ -3005,18 +3005,22 @@ if __name__ == '__main__':
     # find MIX_xto1, auto gen x new blocks
     old_component_num = len(components_info)
     new_block_cou = old_component_num
+    mix_permuation_pair = []                     # these pairs are impossible to construct to a path
     for i in range(old_component_num):
         if components_info[i]['Type'].find('MIX') != -1:
             mix_num = int(components_info[i]['Type'].split('MIX_')[-1].split('to')[0])
+            per_pair = []
             for mix_idx in range(mix_num):
                 mix_input_name = components_info[i]['Inputs'][mix_idx]
                 components_info[i]['Inputs'][mix_idx] = mix_input_name + '_new'
                 tmp_dict = {'Type':'Block', 'IS_REVERSE':False, 'Outputs':[mix_input_name + '_new'], 'Selects':[], 'Inputs':[mix_input_name], 'NODE_ID':new_block_cou}
                 components_info.append(tmp_dict)
+                per_pair.append(new_block_cou)
                 new_block_cou += 1
+            for item in permutations(per_pair, 2):
+                mix_permuation_pair.append(item)
+    print(mix_permuation_pair)
     
-    # for item in components_info:
-    #     print(item)
 
     print('output_components_info...')
     output_components_info(components_info)
@@ -3148,6 +3152,22 @@ if __name__ == '__main__':
 
         print(G.nodes)
 
+
+
+        # print('--------------------------------------')
+        # print(nx.dfs_successors(G, source=180))
+        # print('--------------------------------------')
+        # print(nx.dfs_successors(G, source=22))
+        # print('--------------------------------------')
+        # print(nx.dfs_successors(G, source=110))
+        # print(nx.has_path(G, 196, 0))
+        # print(nx.shortest_path(G, 196, 0))
+        # exit()
+
+
+
+
+
         phase_node = []
         for i in range(len(components_info)):
             if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'SRC' or components_info[i]['Type'] == 'Input_Node':
@@ -3160,7 +3180,7 @@ if __name__ == '__main__':
         pn2_has_edge = []
         for item in list(per_list):
             #print(item)
-            if nx.has_path(G, item[0], item[1]):
+            if nx.has_path(G, item[0], item[1]) and item not in mix_permuation_pair:
                 tmp = [item[0], item[1]]
                 pn2_has_edge.append(tmp)
         print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
@@ -3193,7 +3213,7 @@ if __name__ == '__main__':
                             
                         print(tmp_mix)
                         find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                        if find_path_flag == False:
+                        if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
                             illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
                             continue
                         find_path.append([tmp_mix, tmp_mix_stereo])
@@ -3219,7 +3239,7 @@ if __name__ == '__main__':
                             
                             print(tmp_mix)
                             find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                            if find_path_flag == False:
+                            if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
                                 illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
                                 continue
                             find_path.append([tmp_mix, tmp_mix_stereo])
@@ -3235,10 +3255,12 @@ if __name__ == '__main__':
                 fail_num += 1
                 #exit()
         
-        print('path number :', len(find_path))
-        print(fail_num)
+        print('------------------------------------------------------------')
+        print('successful path number :', len(find_path))
+        print('fail path number :', fail_num)
         # not_found_path_node = [[203,201]]        # test legal path
-        print(not_found_path_node)
+        print('fail path nodes :', not_found_path_node)
+        print('illegal_stereo_path_node :', illegal_stereo_path_node)
         
         #################### non Input_Node pair ####################
 
@@ -3269,16 +3291,19 @@ if __name__ == '__main__':
             print(str(time.time() - start_time) + ' sec')
 
             for output_node in output_node_index:
+                print('Try Output Node :', output_node)
                 for input_node in input_node_index:
                     if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
-                        print('Try ', output_node, input_node)
                         if len(arr_dict[output_node]) == 0:
                             continue
+                        start_time = time.time()
                         tmp_mix = []
                         c = []
                         for node in nx.all_simple_paths(G, not_found_path_node[i][1], input_node):
                             c.append(node)
-                        #find_path_flag, tmp_mix = permutation_find_all_paths(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node)
+                        
+                        print(str(time.time() - start_time) + ' sec   ', input_node, len(c))
+                        start_time = time.time()
                         cou = 0
                         for x in arr_dict[output_node]:
                             for y in c:
@@ -3292,10 +3317,13 @@ if __name__ == '__main__':
                             #     print(cou)
                             if find_path_flag == True:
                                 break
+                        print(str(time.time() - start_time) + ' sec')
                         if find_path_flag == False:
                             continue
                         print(tmp_mix)
-                        tmp_mix_stereo = find_stereo_path(G, components_info, stereo_component_dict, tmp_mix)
+                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                        if find_path_flag == False:
+                            continue
                         find_path.append([tmp_mix, tmp_mix_stereo])
                         find_path_len.append(len(tmp_mix))
                         find_path_flag = True
