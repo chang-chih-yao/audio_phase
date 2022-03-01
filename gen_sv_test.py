@@ -3393,7 +3393,7 @@ if __name__ == '__main__':
         greedy_choose_path = []
 
         for total_num in range(total_path_len):
-            max_match_num = [0, 0, []]   # [max_num, find_path idx, delete_idx array]
+            max_match_num = [-1, -1, []]   # [max_num, find_path idx, delete_idx array]
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
             for i in range(len(find_path)):
                 delete_idx = []
@@ -3428,13 +3428,17 @@ if __name__ == '__main__':
                 # print(len(delete_idx))
             
             print(max_match_num)
+            if max_match_num == -1:       # can't be found pn2_has_edge anymore 
+                break
+            
             greedy_choose_path.append(find_path[max_match_num[1]])
             del find_path[max_match_num[1]]
             delete_tmp = max_match_num[2][::-1]
             for item in delete_tmp:
                 del pn2_has_edge[item]
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
-            if len(pn2_has_edge) == 0:
+            
+            if len(pn2_has_edge) == 0:    #
                 break
 
         
