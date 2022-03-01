@@ -3159,7 +3159,7 @@ if __name__ == '__main__':
         print(G.nodes)
 
 
-        print('--------------------------------------')
+        # print('--------------------------------------')
         # print(nx.dfs_successors(G, source=180))
         # print('--------------------------------------')
         # print(nx.dfs_successors(G, source=22))
@@ -3292,6 +3292,7 @@ if __name__ == '__main__':
         print('fail path number :', fail_num)
         # not_found_path_node = [[203,201]]        # test legal path
         print('fail path nodes :', not_found_path_node)
+        print('illegal_stereo_path number :', len(illegal_stereo_path_node))
         print('illegal_stereo_path_node :', illegal_stereo_path_node)
         
         #################### non Input_Node pair ####################
@@ -3387,20 +3388,11 @@ if __name__ == '__main__':
 
 
         ################### pick path(greedy) ###################
-        
-        # ranked = np.argsort(find_path_len)
-        # largest_indices = ranked[::-1]
-        # print(largest_indices)
-
-        # # for item in largest_indices:
-        # #     print(find_path_len[item], end=' ')
-
-        # print(find_path[largest_indices[0]])
 
         total_path_len = len(find_path)
         greedy_choose_path = []
 
-        while(len(pn2_has_edge)!=0):
+        for total_num in range(total_path_len):
             max_match_num = [0, 0, []]   # [max_num, find_path idx, delete_idx array]
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
             for i in range(len(find_path)):
@@ -3442,9 +3434,11 @@ if __name__ == '__main__':
             for item in delete_tmp:
                 del pn2_has_edge[item]
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
+            if len(pn2_has_edge) == 0:
+                break
 
         
-        print(greedy_choose_path)
+        #print(greedy_choose_path)
         print(len(greedy_choose_path))
 
 
@@ -3466,8 +3460,8 @@ if __name__ == '__main__':
         
         # for item in delete_idx:
         #     del pn2_has_edge[item]
-        print(find_path)
-        print(len(find_path))
+        # print(find_path)
+        # print(len(find_path))
         print(pn2_has_edge)
         print(len(pn2_has_edge))
 
