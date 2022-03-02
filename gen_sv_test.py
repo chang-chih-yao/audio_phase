@@ -3391,52 +3391,15 @@ if __name__ == '__main__':
 
         ################### pick path(greedy) ###################
 
-        find_path_match_arr = []
-        for i in range(len(find_path)):
-            delete_idx = []
-            for edge_idx in range(len(pn2_has_edge)):
-                mono_0_path = find_path[i][0]
-                for mono_0_pre in range(len(mono_0_path)):
-                    if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
-                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                            if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
-                                #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                                delete_idx.append(edge_idx)
-
-                mono_1_path = find_path[i][1]
-                for mono_1_pre in range(len(mono_1_path)):
-                    if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
-                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                            if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
-                                #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                                delete_idx.append(edge_idx)
-            
-            if len(set(delete_idx)) != len(delete_idx):
-                print('find repeated edge index!!!')
-                print(find_path[i][0])
-                print(find_path[i][1])
-                exit()
-            
-            find_path_match_arr.append([i, len(delete_idx)])
-        
-        #print(find_path_match_arr)
-
         total_path_len = len(find_path)
         greedy_choose_path = []
-        speed_up_step = 2
-        select_max_num = 0
+        last_max_num = -1
 
         for total_num in range(total_path_len):
             max_match_num = [0, 0, []]   # [max_num, find_path idx, delete_idx array]
-            #useless_path = []
-            if total_num % speed_up_step == 0:
-                print(sorted(find_path_match_arr, key=lambda l:l[1], reverse=True))
-                select_max_num = (sorted(find_path_match_arr, key=lambda l:l[1], reverse=True)[speed_up_step][1])-1
-                print('select_max_num :', select_max_num)
+            useless_path = []
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
             for i in range(len(find_path)):
-                if find_path_match_arr[i][1] < select_max_num:
-                    continue
                 delete_idx = []
                 for edge_idx in range(len(pn2_has_edge)):
                     mono_0_path = find_path[i][0]
@@ -3461,27 +3424,29 @@ if __name__ == '__main__':
                     print(find_path[i][1])
                     exit()
                 
-                # if len(delete_idx) == 0:
-                #     useless_path.append(i)
+                if len(delete_idx) == 0:
+                    useless_path.append(i)
 
                 if max_match_num[0] < len(delete_idx):
                     max_match_num[0] = len(delete_idx)
                     max_match_num[1] = i
                     max_match_num[2] = delete_idx
+                    if last_max_num == max_match_num[0]:
+                        break
+                
                 # print(delete_idx)
                 # print(len(delete_idx))
-                if total_num % speed_up_step == 0:
-                    find_path_match_arr[i][1] = len(delete_idx)
             
             print(max_match_num)
             if max_match_num[0] == 0:       # can't be found pn2_has_edge anymore 
                 break
             
+            last_max_num = max_match_num[0]
             greedy_choose_path.append(find_path[max_match_num[1]])
-            # useless_path.append(max_match_num[1])
-            # delete_tmp = sorted(useless_path, reverse=True)
-            # for item in delete_tmp:
-            #     del find_path[item]
+            useless_path.append(max_match_num[1])
+            delete_tmp = sorted(useless_path, reverse=True)
+            for item in delete_tmp:
+                del find_path[item]
             #del find_path[max_match_num[1]]
             delete_tmp = max_match_num[2][::-1]
             for item in delete_tmp:
