@@ -2814,8 +2814,8 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
                 mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
                 next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
                 if mono_component_selects != next_component_selects:
-                    print(mono_component_selects, next_component_selects)
-                    print('MUX sel diff !')
+                    # print(mono_component_selects, next_component_selects)
+                    # print('MUX sel diff !')
                     next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
                     next_node_index = components_info[stereo_path[-1]]['select'][next_sel_index]
                     if next_node_index in input_node_index:            # this node is end of path -> break while loop
@@ -3156,7 +3156,7 @@ if __name__ == '__main__':
 
         stereo_component_dict = gen_stereo_componenet_dict()
 
-        print(G.nodes)
+        #print(G.nodes)
 
 
         # print('--------------------------------------')
@@ -3185,8 +3185,9 @@ if __name__ == '__main__':
         phase_node = []
         for i in range(len(components_info)):
             if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'SRC' or components_info[i]['Type'] == 'Input_Node':
-                print(components_info[i]['Type'])
+                #print(components_info[i]['Type'])
                 phase_node.append(i)
+        print('------------------------------------------------------------')
         print('permutation node', phase_node)
         print('permutation node numbers : ' + str(len(phase_node)))
         per_list = permutations(phase_node, 2)
@@ -3216,7 +3217,7 @@ if __name__ == '__main__':
                 tmp = [item[0], item[1]]
                 pn2_has_edge.append(tmp)
         print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
-
+        print('------------------------------------------------------------')
         #print(pn2_has_edge)
 
         find_path_flag = False
@@ -3238,7 +3239,7 @@ if __name__ == '__main__':
                         
                         if len(set(tmp_mix)) != len(tmp_mix):
                             #print(tmp_mix)
-                            print('GG')
+                            # print('GG')
                             find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
                             if find_path_flag == False:
                                 continue
@@ -3294,6 +3295,7 @@ if __name__ == '__main__':
         print('fail path nodes :', not_found_path_node)
         print('illegal_stereo_path number :', len(illegal_stereo_path_node))
         print('illegal_stereo_path_node :', illegal_stereo_path_node)
+        print('------------------------------------------------------------')
         
         #################### non Input_Node pair ####################
         '''
@@ -3389,13 +3391,52 @@ if __name__ == '__main__':
 
         ################### pick path(greedy) ###################
 
+        find_path_match_arr = []
+        for i in range(len(find_path)):
+            delete_idx = []
+            for edge_idx in range(len(pn2_has_edge)):
+                mono_0_path = find_path[i][0]
+                for mono_0_pre in range(len(mono_0_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
+                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
+
+                mono_1_path = find_path[i][1]
+                for mono_1_pre in range(len(mono_1_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
+                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
+            
+            if len(set(delete_idx)) != len(delete_idx):
+                print('find repeated edge index!!!')
+                print(find_path[i][0])
+                print(find_path[i][1])
+                exit()
+            
+            find_path_match_arr.append([i, len(delete_idx)])
+        
+        #print(find_path_match_arr)
+
         total_path_len = len(find_path)
         greedy_choose_path = []
+        speed_up_step = 2
+        select_max_num = 0
 
         for total_num in range(total_path_len):
-            max_match_num = [-1, -1, []]   # [max_num, find_path idx, delete_idx array]
+            max_match_num = [0, 0, []]   # [max_num, find_path idx, delete_idx array]
+            #useless_path = []
+            if total_num % speed_up_step == 0:
+                print(sorted(find_path_match_arr, key=lambda l:l[1], reverse=True))
+                select_max_num = (sorted(find_path_match_arr, key=lambda l:l[1], reverse=True)[speed_up_step][1])-1
+                print('select_max_num :', select_max_num)
             print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
             for i in range(len(find_path)):
+                if find_path_match_arr[i][1] < select_max_num:
+                    continue
                 delete_idx = []
                 for edge_idx in range(len(pn2_has_edge)):
                     mono_0_path = find_path[i][0]
@@ -3420,52 +3461,45 @@ if __name__ == '__main__':
                     print(find_path[i][1])
                     exit()
                 
+                # if len(delete_idx) == 0:
+                #     useless_path.append(i)
+
                 if max_match_num[0] < len(delete_idx):
                     max_match_num[0] = len(delete_idx)
                     max_match_num[1] = i
                     max_match_num[2] = delete_idx
                 # print(delete_idx)
                 # print(len(delete_idx))
+                if total_num % speed_up_step == 0:
+                    find_path_match_arr[i][1] = len(delete_idx)
             
             print(max_match_num)
-            if max_match_num == -1:       # can't be found pn2_has_edge anymore 
+            if max_match_num[0] == 0:       # can't be found pn2_has_edge anymore 
                 break
             
             greedy_choose_path.append(find_path[max_match_num[1]])
-            del find_path[max_match_num[1]]
+            # useless_path.append(max_match_num[1])
+            # delete_tmp = sorted(useless_path, reverse=True)
+            # for item in delete_tmp:
+            #     del find_path[item]
+            #del find_path[max_match_num[1]]
             delete_tmp = max_match_num[2][::-1]
             for item in delete_tmp:
                 del pn2_has_edge[item]
-            print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
             
-            if len(pn2_has_edge) == 0:    #
+            if len(pn2_has_edge) == 0:       # covered every pair in pn2_has_edge -> finish
                 break
 
         
         #print(greedy_choose_path)
-        print(len(greedy_choose_path))
+        print('------------------------------------------------------------')
+        print('pattern num :', len(greedy_choose_path))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
         # for item in delete_idx:
         #     del pn2_has_edge[item]
         # print(find_path)
         # print(len(find_path))
+        print('------------ uncovered pairs ------------')
         print(pn2_has_edge)
         print(len(pn2_has_edge))
 
