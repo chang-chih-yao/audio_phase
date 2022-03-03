@@ -31,6 +31,7 @@ from itertools import permutations, combinations
 import numpy as np
 import time
 from difflib import SequenceMatcher
+import pickle
 
 ########################## global settings ##########################
 SIGNATURE = '/*********** Howard Auto Gen Tools ***********/\n'
@@ -2999,6 +3000,160 @@ def permutation_find_all_paths(G, node_0, node_1, node_2, node_3=None):
 
     return success_flag, mix
 
+
+def gen_find_path(pn2_has_edge):
+    find_path_flag = False
+    find_path = []
+    not_found_path_node = []
+    illegal_stereo_path_node = []
+    
+    for i in range(len(pn2_has_edge)):
+        find_path_flag = False
+        print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]))
+        if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
+            for output_node in output_node_index:
+                if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1]):
+                    tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
+                    tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                    tmp_mix = tmp_a + tmp_b[1:]
+                    
+                    if len(set(tmp_mix)) != len(tmp_mix):
+                        #print(tmp_mix)
+                        # print('GG')
+                        find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                        if find_path_flag == False:
+                            continue
+                        
+                    print(tmp_mix)
+                    find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                    if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
+                        illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                        continue
+                    find_path.append([tmp_mix, tmp_mix_stereo])
+                    find_path_flag = True
+                    break
+        else:
+            for output_node in output_node_index:
+                for input_node in input_node_index:
+                    #print('Try ', output_node, input_node)
+                    if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node):
+                        tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
+                        tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
+                        tmp_c = nx.shortest_path(G, pn2_has_edge[i][1], input_node)
+                        tmp_mix = tmp_a + tmp_b[1:] + tmp_c[1:]
+
+                        if len(set(tmp_mix)) != len(tmp_mix):
+                            #print(tmp_mix)
+                            #print('QQ')
+                            find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node)
+                            if find_path_flag == False:
+                                continue
+                        
+                        print(tmp_mix)
+                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                        if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
+                            illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                            continue
+                        find_path.append([tmp_mix, tmp_mix_stereo])
+                        find_path_flag = True
+                        break
+                if find_path_flag == True:
+                    break
+
+        if find_path_flag == False:
+            print('FAIL !!! some shortest path of pn2_has_edge not found')
+            not_found_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+            #exit()
+    return find_path, not_found_path_node, illegal_stereo_path_node
+
+
+def greedy_pick_path(find_path, pn2_has_edge):
+    greedy_choose_path = []
+    max_match_num = [0, 0, []]       # [max_num, find_path idx, delete_idx array]
+    useless_path = []                # 存放 在find_path中 沒有用的path idx (len(delete_idx)==0)
+    last_max_num = -1                # 上一次找到的 max_num 值
+    start_idx = 0                    # 從 start_idx 開始找 find_path for loop
+    DEF_MAX_VAULE = 99999999
+    end_idx = DEF_MAX_VAULE
+    
+    start_time = time.time()
+
+    while(True):
+        if end_idx == DEF_MAX_VAULE:
+            max_match_num = [0, 0, []]
+            useless_path = []
+        print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
+        for i in range(len(find_path)):
+            if i < start_idx or i > end_idx:      # start_idx >= i >= end_idx  not continue
+                continue
+            delete_idx = []
+            for edge_idx in range(len(pn2_has_edge)):
+                mono_0_path = find_path[i][0]
+                for mono_0_pre in range(len(mono_0_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
+                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
+
+                mono_1_path = find_path[i][1]
+                for mono_1_pre in range(len(mono_1_path)):
+                    if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
+                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                            if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                                delete_idx.append(edge_idx)
+            
+            if len(delete_idx) == 0:
+                useless_path.append(i)
+
+            if max_match_num[0] < len(delete_idx):
+                max_match_num[0] = len(delete_idx)
+                max_match_num[1] = i
+                max_match_num[2] = delete_idx
+                if last_max_num == max_match_num[0]:    # 如果目前找到的 max_num 是上一次找到的 max_num(last_max_num) 就可以不用繼續找了
+                    break
+            elif end_idx != DEF_MAX_VAULE and max_match_num[0] == len(delete_idx) and max_match_num[1] > i:
+                max_match_num[0] = len(delete_idx)
+                max_match_num[1] = i
+                max_match_num[2] = delete_idx
+
+            # print(delete_idx)
+            # print(len(delete_idx))
+        
+        if max_match_num[0] == 0:       # can't be found pn2_has_edge anymore
+            if start_idx != 0:
+                start_idx = 0
+                continue
+            else:
+                break
+        
+        if last_max_num != max_match_num[0] and start_idx != 0:
+            end_idx = start_idx
+            start_idx = 0
+            continue
+
+        print(max_match_num[0], max_match_num[1])
+
+        last_max_num = max_match_num[0]                 # update last_max_num value
+        start_idx = max_match_num[1] - len(useless_path)
+        end_idx = DEF_MAX_VAULE
+
+        greedy_choose_path.append(find_path[max_match_num[1]])
+        useless_path.append(max_match_num[1])
+        delete_tmp = sorted(useless_path, reverse=True)
+        for item in delete_tmp:
+            del find_path[item]
+        delete_tmp = max_match_num[2][::-1]
+        for item in delete_tmp:
+            del pn2_has_edge[item]
+        
+        if len(pn2_has_edge) == 0:       # covered every pair in pn2_has_edge -> finish
+            break
+    
+    print(time.time()-start_time)
+    return greedy_choose_path, pn2_has_edge
+
 if __name__ == '__main__':
     ################################################################## main ##################################################################
     components_parsing_rule = get_components_parsing_rule()
@@ -3146,6 +3301,13 @@ if __name__ == '__main__':
         G, color_map, edge_labels = gen_grapth(components_info)
         print('done\n')
         
+
+
+
+
+
+
+
         input_node_index = []
         output_node_index = []
         for i in range(len(components_info)):
@@ -3157,7 +3319,6 @@ if __name__ == '__main__':
         stereo_component_dict = gen_stereo_componenet_dict()
 
         #print(G.nodes)
-
 
         # print('--------------------------------------')
         # print(nx.dfs_successors(G, source=180))
@@ -3173,14 +3334,8 @@ if __name__ == '__main__':
         # for item in nx.all_simple_paths(G, 0, 196):
         #     print(item)
         # print(list(nx.all_simple_paths(G, 0, 196)))
-        
-
         #print(nx.dfs_successors(G, source=196))
         #exit()
-
-
-
-
 
         phase_node = []
         for i in range(len(components_info)):
@@ -3220,77 +3375,30 @@ if __name__ == '__main__':
         print('------------------------------------------------------------')
         #print(pn2_has_edge)
 
-        find_path_flag = False
-        find_path = []
-        find_path_len = []
-        fail_num = 0
-        not_found_path_node = []
-        illegal_stereo_path_node = []
-        
-        for i in range(len(pn2_has_edge)):
-            find_path_flag = False
-            print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]))
-            if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
-                for output_node in output_node_index:
-                    if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1]):
-                        tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
-                        tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                        tmp_mix = tmp_a + tmp_b[1:]
-                        
-                        if len(set(tmp_mix)) != len(tmp_mix):
-                            #print(tmp_mix)
-                            # print('GG')
-                            find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                            if find_path_flag == False:
-                                continue
-                            
-                        print(tmp_mix)
-                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                        if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
-                            illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
-                            continue
-                        find_path.append([tmp_mix, tmp_mix_stereo])
-                        find_path_len.append(len(tmp_mix))
-                        find_path_flag = True
-                        break
-            else:
-                for output_node in output_node_index:
-                    for input_node in input_node_index:
-                        #print('Try ', output_node, input_node)
-                        if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node):
-                            tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
-                            tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
-                            tmp_c = nx.shortest_path(G, pn2_has_edge[i][1], input_node)
-                            tmp_mix = tmp_a + tmp_b[1:] + tmp_c[1:]
+        ########################## find path ##########################
 
-                            if len(set(tmp_mix)) != len(tmp_mix):
-                                #print(tmp_mix)
-                                #print('QQ')
-                                find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node)
-                                if find_path_flag == False:
-                                    continue
-                            
-                            print(tmp_mix)
-                            find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                            if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
-                                illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
-                                continue
-                            find_path.append([tmp_mix, tmp_mix_stereo])
-                            find_path_len.append(len(tmp_mix))
-                            find_path_flag = True
-                            break
-                    if find_path_flag == True:
-                        break
-
-            if find_path_flag == False:
-                print('FAIL !!! some shortest path of pn2_has_edge not found')
-                not_found_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
-                fail_num += 1
-                #exit()
+        if input('Read path from files?(y/n) ').lower() == 'y':
+            with open('input/find_path.pickle', 'rb') as f:
+                find_path = pickle.load(f)
+            with open('input/not_found_path_node.pickle', 'rb') as f:
+                not_found_path_node = pickle.load(f)
+            with open('input/illegal_stereo_path_node.pickle', 'rb') as f:
+                illegal_stereo_path_node = pickle.load(f)
+        else:
+            print('Start to gen path data...')
+            find_path, not_found_path_node, illegal_stereo_path_node = gen_find_path(pn2_has_edge)
+            print('Start to save data...')
+            with open('input/find_path.pickle', 'wb') as f:
+                pickle.dump(find_path, f)
+            with open('input/not_found_path_node.pickle', 'wb') as f:
+                pickle.dump(not_found_path_node, f)
+            with open('input/illegal_stereo_path_node.pickle', 'wb') as f:
+                pickle.dump(illegal_stereo_path_node, f)
+            print('Finish !!')
         
         print('------------------------------------------------------------')
-        print('successful path number :', len(find_path), len(find_path_len))
-        print('fail path number :', fail_num)
+        print('successful path number :', len(find_path))
+        print('fail path number :', len(not_found_path_node))
         # not_found_path_node = [[203,201]]        # test legal path
         print('fail path nodes :', not_found_path_node)
         print('illegal_stereo_path number :', len(illegal_stereo_path_node))
@@ -3380,93 +3488,28 @@ if __name__ == '__main__':
 
 
 
-
-        ################### check illegal path ###################
-
-        # pass this stage
-
-
-
-
-
         ################### pick path(greedy) ###################
 
-        total_path_len = len(find_path)
-        greedy_choose_path = []
-        last_max_num = -1
-
-        for total_num in range(total_path_len):
-            max_match_num = [0, 0, []]   # [max_num, find_path idx, delete_idx array]
-            useless_path = []
-            print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
-            for i in range(len(find_path)):
-                delete_idx = []
-                for edge_idx in range(len(pn2_has_edge)):
-                    mono_0_path = find_path[i][0]
-                    for mono_0_pre in range(len(mono_0_path)):
-                        if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
-                            for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                                if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
-                                    #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                                    delete_idx.append(edge_idx)
-
-                    mono_1_path = find_path[i][1]
-                    for mono_1_pre in range(len(mono_1_path)):
-                        if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
-                            for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                                if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
-                                    #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                                    delete_idx.append(edge_idx)
-                
-                if len(set(delete_idx)) != len(delete_idx):
-                    print('find repeated edge index!!!')
-                    print(find_path[i][0])
-                    print(find_path[i][1])
-                    exit()
-                
-                if len(delete_idx) == 0:
-                    useless_path.append(i)
-
-                if max_match_num[0] < len(delete_idx):
-                    max_match_num[0] = len(delete_idx)
-                    max_match_num[1] = i
-                    max_match_num[2] = delete_idx
-                    if last_max_num == max_match_num[0]:
-                        break
-                
-                # print(delete_idx)
-                # print(len(delete_idx))
-            
-            print(max_match_num)
-            if max_match_num[0] == 0:       # can't be found pn2_has_edge anymore 
-                break
-            
-            last_max_num = max_match_num[0]
-            greedy_choose_path.append(find_path[max_match_num[1]])
-            useless_path.append(max_match_num[1])
-            delete_tmp = sorted(useless_path, reverse=True)
-            for item in delete_tmp:
-                del find_path[item]
-            #del find_path[max_match_num[1]]
-            delete_tmp = max_match_num[2][::-1]
-            for item in delete_tmp:
-                del pn2_has_edge[item]
-            
-            if len(pn2_has_edge) == 0:       # covered every pair in pn2_has_edge -> finish
-                break
-
+        if input('Read greedy choose path from files?(y/n) ').lower() == 'y':
+            with open('input/greedy_choose_path.pickle', 'rb') as f:
+                greedy_choose_path = pickle.load(f)
+            with open('input/uncover_pairs.pickle', 'rb') as f:
+                uncover_pairs = pickle.load(f)
+        else:
+            print('Start to gen greedy path data...')
+            greedy_choose_path, uncover_pairs = greedy_pick_path(find_path, pn2_has_edge)
+            print('Start to save data...')
+            with open('input/greedy_choose_path.pickle', 'wb') as f:
+                pickle.dump(greedy_choose_path, f)
+            with open('input/uncover_pairs.pickle', 'wb') as f:
+                pickle.dump(uncover_pairs, f)
         
         #print(greedy_choose_path)
         print('------------------------------------------------------------')
         print('pattern num :', len(greedy_choose_path))
-
-        # for item in delete_idx:
-        #     del pn2_has_edge[item]
-        # print(find_path)
-        # print(len(find_path))
-        print('------------ uncovered pairs ------------')
-        print(pn2_has_edge)
-        print(len(pn2_has_edge))
+        print('--------------------- uncovered pairs ----------------------')
+        print(uncover_pairs)
+        print(len(uncover_pairs))
 
         
         exit()
