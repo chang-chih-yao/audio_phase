@@ -2945,62 +2945,6 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
     
     return success_flag, mix
 
-
-def permutation_find_all_paths(G, node_0, node_1, node_2, node_3=None):
-    mix = []
-    a = []
-    b = []
-    c = []
-    for i in nx.all_simple_paths(G, node_0, node_1):
-        a.append(i)
-    for i in nx.all_simple_paths(G, node_1, node_2):
-        b.append(i)
-    for i in nx.all_simple_paths(G, node_2, node_3):
-        c.append(i)
-    #print(len(a), len(b), len(c))
-    
-    # numba_mix = List()
-    # for i in range(999):
-    #     numba_mix.append(-1)
-    # mix, mix_len = for_loop_find_path(numba_mix, a, b, c)
-    # print(mix_len)
-    # result = mix[:mix_len]
-    # print(result)
-    
-    tmp_cou = 0
-    success_flag = False
-
-    for x in a:
-        for y in b:
-            zzz = x + y[1:]
-            if len(set(zzz)) != len(zzz):
-                continue
-            for z in c:
-                mix = x + y[1:] + z[1:]
-                if len(set(mix)) == len(mix):
-                    print(mix)
-                    print('THIRD METHOD find !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-                    success_flag = True
-                    break
-            if success_flag == True:
-                break
-        # if tmp_cou%1000 == 0:
-        #     print(tmp_cou)
-        tmp_cou += 1
-        if success_flag == True:
-            break
-    
-    # if success_flag == False:
-    #     print('not found QQQQQQQQ')
-    
-    tmp_a = nx.shortest_path(G, node_0, node_1)
-    tmp_b = nx.shortest_path(G, node_1, node_2)
-    tmp_c = nx.shortest_path(G, node_2, node_3)
-    mix = tmp_a + tmp_b[1:] + tmp_c[1:]
-
-    return success_flag, mix
-
-
 def gen_find_path(pn2_has_edge):
     find_path_flag = False
     find_path = []
@@ -3354,6 +3298,8 @@ if __name__ == '__main__':
                 # if node0 -> node1 has path
                 # mix_permutation_pair are impossible to construct to a path
                 if only_direct_edge(G, item[1], item[0]):
+                    # 如果 a->b has path 且 b->a是edge 且 a->b不是edge, 代表a或b一定不是Input_node, a->b 是一個中間段的path(Output->a->b->Input)
+                    # 代表
                     continue
                 if nx.has_path(G, item[1], item[0]):
                     if len(nx.shortest_path(G, item[1], item[0])) == 3:
@@ -3503,6 +3449,7 @@ if __name__ == '__main__':
                 pickle.dump(greedy_choose_path, f)
             with open('input/uncover_pairs.pickle', 'wb') as f:
                 pickle.dump(uncover_pairs, f)
+            print('Finish !!')
         
         #print(greedy_choose_path)
         print('------------------------------------------------------------')
