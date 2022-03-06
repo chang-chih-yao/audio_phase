@@ -2823,7 +2823,7 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
                         stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
                         break
                     else:
-                        print('illegal :  MUX sel diff !!!!!!!!!!!!!!')
+                        #print('illegal :  MUX sel diff !!!!!!!!!!!!!!')
                         success_flag = False
                         break
             next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
@@ -2833,22 +2833,22 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
             path_len += 1
         except:
             success_flag = False
-            print('find stereo path ERROR')
+            #print('find stereo path ERROR')
             break
 
-    if success_flag == False:
-        print(stereo_path)
-        #exit()
+    # if success_flag == False:
+    #     print(stereo_path)
+    #     exit()
 
     if len(set(mono+stereo_path)) != len(mono+stereo_path):
         for item in (set(mono) & set(stereo_path)):
             if item not in input_node_index:
-                print('Stereo path found repeated node not in input_node list !!!!')
+                #print('Stereo path found repeated node not in input_node list !!!!')
                 success_flag = False
                 #exit()
         #exit()
 
-    print(stereo_path)
+    #print(stereo_path)
     return success_flag, stereo_path
 
 
@@ -2953,7 +2953,7 @@ def gen_find_path(pn2_has_edge):
     
     for i in range(len(pn2_has_edge)):
         find_path_flag = False
-        print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]))
+        print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]), end='')
         if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
             for output_node in output_node_index:
                 if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1]):
@@ -2967,12 +2967,16 @@ def gen_find_path(pn2_has_edge):
                         find_path_flag, tmp_mix = permutation_find_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1])
                         if find_path_flag == False:
                             continue
-                        
-                    print(tmp_mix)
+
                     find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                    if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
-                        illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                    if find_path_flag == False:
+                        if [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
+                            illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
                         continue
+                    
+                    # print()
+                    # print(tmp_mix)
+                    # print(tmp_mix_stereo)
                     find_path.append([tmp_mix, tmp_mix_stereo])
                     find_path_flag = True
                     break
@@ -2993,11 +2997,15 @@ def gen_find_path(pn2_has_edge):
                             if find_path_flag == False:
                                 continue
                         
-                        print(tmp_mix)
                         find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
-                        if find_path_flag == False and [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
-                            illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
+                        if find_path_flag == False:
+                            if [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
+                                illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
                             continue
+                        
+                        # print()
+                        # print(tmp_mix)
+                        # print(tmp_mix_stereo)
                         find_path.append([tmp_mix, tmp_mix_stereo])
                         find_path_flag = True
                         break
@@ -3008,6 +3016,8 @@ def gen_find_path(pn2_has_edge):
             print('FAIL !!! some shortest path of pn2_has_edge not found')
             not_found_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
             #exit()
+        else:
+            print('FIND_PATH')
     return find_path, not_found_path_node, illegal_stereo_path_node
 
 
@@ -3297,26 +3307,21 @@ if __name__ == '__main__':
             if nx.has_path(G, item[0], item[1]) and item not in mix_permuation_pair:
                 # if node0 -> node1 has path
                 # mix_permutation_pair are impossible to construct to a path
-                if only_direct_edge(G, item[1], item[0]):
-                    # 如果 a->b has path 且 b->a是edge 且 a->b不是edge, 代表a或b一定不是Input_node, a->b 是一個中間段的path(Output->a->b->Input)
-                    # 代表
-                    continue
                 if nx.has_path(G, item[1], item[0]):
+                    if len(nx.shortest_path(G, item[1], item[0])) == 2:
+                        if only_direct_edge(G, item[1], item[0]) and G.out_degree[item[1]] == 1:
+                            # 如果 a->b has path 且 b->a是edge 且 a->b不是edge, 代表a或b一定不是Input_node, a->b 是一個中間段的path(Output->a->b->Input)
+                            # 而且b的out_degree只有1，代表b要走到input必定會經過a，那就不合法了
+                            continue
+                
                     if len(nx.shortest_path(G, item[1], item[0])) == 3:
                         node_0 = nx.shortest_path(G, item[1], item[0])[0]
                         node_1 = nx.shortest_path(G, item[1], item[0])[1]
                         node_2 = nx.shortest_path(G, item[1], item[0])[2]
-                        if only_direct_edge(G, node_0, node_1) and only_direct_edge(G, node_1, node_2):
-                            cou = 0
-                            for item in nx.all_simple_paths(G, item[1], item[0]):
-                                if cou >= 2:
-                                    break
-                                cou += 1
-                            if cou == 1:
-                                continue
+                        if only_direct_edge(G, node_0, node_1) and only_direct_edge(G, node_1, node_2) and G.out_degree[node_0] == 1 and G.out_degree[node_1] == 1:
+                            continue
                 
-                tmp = [item[0], item[1]]
-                pn2_has_edge.append(tmp)
+                pn2_has_edge.append([item[0], item[1]])
         print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
         print('------------------------------------------------------------')
         #print(pn2_has_edge)
@@ -3456,7 +3461,7 @@ if __name__ == '__main__':
         print('pattern num :', len(greedy_choose_path))
         print('--------------------- uncovered pairs ----------------------')
         print(uncover_pairs)
-        print(len(uncover_pairs))
+        print('uncovered pairs num :', len(uncover_pairs))
 
         
         exit()
