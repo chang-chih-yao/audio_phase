@@ -3135,7 +3135,7 @@ if __name__ == '__main__':
             for item in permutations(per_pair, 2):
                 mix_permuation_pair.append(item)
     print(mix_permuation_pair)
-    
+
 
     print('output_components_info...')
     output_components_info(components_info)
@@ -3308,17 +3308,18 @@ if __name__ == '__main__':
                 # if node0 -> node1 has path
                 # mix_permutation_pair are impossible to construct to a path
                 if nx.has_path(G, item[1], item[0]):
-                    if len(nx.shortest_path(G, item[1], item[0])) == 2:
-                        if only_direct_edge(G, item[1], item[0]) and G.out_degree[item[1]] == 1:
-                            # 如果 a->b has path 且 b->a是edge 且 a->b不是edge, 代表a或b一定不是Input_node, a->b 是一個中間段的path(Output->a->b->Input)
-                            # 而且b的out_degree只有1，代表b要走到input必定會經過a，那就不合法了
-                            continue
-                
-                    if len(nx.shortest_path(G, item[1], item[0])) == 3:
-                        node_0 = nx.shortest_path(G, item[1], item[0])[0]
-                        node_1 = nx.shortest_path(G, item[1], item[0])[1]
-                        node_2 = nx.shortest_path(G, item[1], item[0])[2]
-                        if only_direct_edge(G, node_0, node_1) and only_direct_edge(G, node_1, node_2) and G.out_degree[node_0] == 1 and G.out_degree[node_1] == 1:
+                    # 如果node1 -> node0(反向)有path, 而且shortest path長度為2~3之間(可自行調整數字3)
+                    short_tmp = nx.shortest_path(G, item[1], item[0])
+                    if len(short_tmp) >= 2 and len(short_tmp) <= 3:
+                        cou = 0
+                        for item in nx.all_simple_paths(G, item[1], item[0]):
+                            # 計算所有路徑, 如果只有唯一路徑, cou == 1, 否則 cou >= 2
+                            if cou >= 2:
+                                break
+                            cou += 1
+                        if cou == 1:
+                            # 如果node1 -> node0(反向)只存在唯一路徑, 代表node0 -> node1(正向)不可能找的到path通過 output -> node0 -> node1-> input
+                            #print(len(short_tmp), short_tmp)
                             continue
                 
                 pn2_has_edge.append([item[0], item[1]])
