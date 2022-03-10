@@ -2322,16 +2322,19 @@ def cnt_SRC_in_path(path, components_info):
         
     
 
-def pattern_auto_gen(read_path_idx_list, components_info, all_path, in_and_out_info_files = ['in_info.xlsx', 'out_info.xlsx'], reg_info_file = 'reg_info.xlsx', output_dir = PATTERN_DIR, input_dir = INPUT_DIR):
+def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in_info.xlsx', 'out_info.xlsx'], reg_info_file = 'reg_info.xlsx', output_dir = PATTERN_DIR, input_dir = INPUT_DIR):
     VIP_DEFINE_SETTINGS, VIP_ENABLE_SETTINGS = parse_in_and_out_info(in_and_out_info_files, input_dir)
     SIGNAL_SETTINGS = parse_reg_info(reg_info_file, input_dir)
+
+    if(os.path.isdir(output_dir)):
+        shutil.rmtree(output_dir)
         
-    for read_path_idx in read_path_idx_list:
+    for idx, stereo_path in enumerate(pattern_path):
         CONTENTS = []
         contents_append_endl(CONTENTS, SIGNATURE)
         
-        class_name = 'audio_data_path_auto_gen_pattern_path_{}'.format(read_path_idx)
-        path   = all_path.get_path_by_id(read_path_idx)
+        class_name = 'audio_data_phase_auto_gen_{}'.format(idx)
+        path = stereo_path[0]
         input  = int(path[-1])
         output = int(path[0])
         input_signal  = components_info[input]['Outputs'][0]
@@ -2431,7 +2434,7 @@ def pattern_auto_gen(read_path_idx_list, components_info, all_path, in_and_out_i
             else:
                 path_string += ' '
 
-        contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(read_path_idx, path_string))
+        contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(idx, path_string))
         for idx, node_id in enumerate(path):
             node = components_info[node_id]
             temp_content  = '`uvm_info("audio_data_path_pattern", "Node['
@@ -3465,138 +3468,7 @@ if __name__ == '__main__':
         print('uncovered pairs num :', len(uncover_pairs))
 
         
-        exit()
-        
-
         if not FOR_SD_CHECK_ONLY:
-            SKIP_PROCESS_PATH = False
-            control = input('skip process path?\n   (y)es: read path from previous result(need input/all_path.txt and input/chosen_path_idx_list.txt)\n   (n)o : process again\n     ? ')
-            if control == 'y':
-                SKIP_PROCESS_PATH = True
-        else:
-            SKIP_PROCESS_PATH = False
-        
-        if not SKIP_PROCESS_PATH:
-            print('process_path...')
-            process_path()
-            print('done\n')
-            
-        control = input('Merge all_path[*] to all_path?\n')
-        if control == 'y':
-            merge_all_path()
-            
-        chosen_path_idx_list = read_chosen_path_idx_list()
-        all_path = read_all_path()
-        
-        if FOR_SD_CHECK_ONLY:
-            input('Press enter to continue...')
-        
-        if not FOR_SD_CHECK_ONLY:
-            control = input('Visualization?')
-            if control == 'y':
-                #control = input("Show grapth? Press Y(yes) or N(no): ")
-                #if control.lower() == 'y':
-                
-                #pos = nx.random_layout(G, seed=13)
-                #nx.draw_networkx(G, pos, node_color=color_map, with_labels = True)
-                #plt.savefig('path.png')
-                #plt.show()
-                
-                fig = plt.figure(figsize=(19.2, 10.8))
-                #pos = nx.spectral_layout(G, scale = 2)
-                pos = nx.spring_layout(G, k = 5/math.sqrt(G.order()))
-                nx.draw(G, pos=pos,  node_color=color_map, with_labels=True) 
-                nx.draw_networkx_edge_labels(G, pos=pos, edge_labels = edge_labels, alpha=0.7, bbox=dict(alpha=0), font_size=10, font_color='blue')
-                plt.savefig('path.png', dpi=600)
-                
-                nx.write_graphml(G, "all.graphml")
-                
-                #cy = CyRestClient()
-                #cy.session.delete()
-                #n = cy.network.create_from_networkx(G)
-                #cy.layout.apply(name='circular', network=n)
-                #Image(n.get_png(height=400))
-
-                #plt.show()
-            with open('networkdata1.json', 'w') as outfile1:
-                outfile1.write(json.dumps(json_graph.node_link_data(G)))
-                    
-            
-            control = input('auto_add_chosen_path_greedy, y(es) or n(o)?')
-            if control.lower() == 'y':
-                print('auto_add_chosen_path_greedy...')
-                print('get_coverd_map...')
-                edge_covered_map = get_coverd_map(G, all_path, chosen_path_idx_list)
-                print('done\n')
-                chosen_path_idx_list = auto_add_chosen_path_greedy(G, all_path, chosen_path_idx_list, edge_covered_map)
-                print('done\n')
-                
-            #else:
-            #    print('auto_add_chosen_path...')
-            #    chosen_path_idx_list = auto_add_chosen_path(G, all_path, chosen_path_idx_list, edge_covered_map)
-            #    print('done\n')
-            #    chosen_path_idx_list = reduce_chosen_path_idx_list(chosen_path_idx_list, all_path)
-                
-                print(chosen_path_idx_list)
-                
-                print('write_chosen_path_idx_list...')
-                write_chosen_path_idx_list(chosen_path_idx_list)
-                print('done\n')
-            
-            control = input('auto_add_chosen_path_search, y(es) or n(o)?')
-            if control.lower() == 'y':
-                print('try to cover all edges...')
-                chosen_path_idx_list = auto_add_chosen_path_search(G, all_path, chosen_path_idx_list, edge_covered_map)
-                print('done')
-                
-                print(chosen_path_idx_list)
-            
-                print('write_chosen_path_idx_list...')
-                write_chosen_path_idx_list(chosen_path_idx_list)
-                print('done\n')
-
-            #control = input("Overwrite all_path.xlsx? Press Y(yes) or N(no): ")
-            #if control.lower() == 'y':
-            #    print('write_path_to_excel...')
-            #    write_path_to_excel(all_path, chosen_path_idx_list, components_info)
-            #    print('done\n')
-            
-            #user_choose_path_list = check_path_equal(all_path, chosen_path_idx_list, read_path_idx_list)
-            #if user_choose_path_list:
-            #    print('user_choose_path_list:')
-            #    for user_choose_path in user_choose_path_list:
-            #        print(user_choose_path)
-            #    print('')
-            
-            #control = input("Please edit the all_path.xlsx then press C(continue) or press E(exit): ")
-            #if control.lower() == 'c':
-            #    read_path_idx_list = read_path_from_excel()
-            #    
-            #    print('')
-            #    
-            #    if read_path_idx_list:
-            #        path_string = ''
-            #        for read_path_idx in read_path_idx_list:
-            #            path_string += '{} '.format(read_path_idx)
-            #            
-            #        print('Chosen paths: {}'.format(path_string))
-            #        write_chosen_path_idx_list(read_path_idx_list)
-            #    else:
-            #        print('No paths chosen')
-            
-            chosen_path_idx_list = read_chosen_path_idx_list()
-            edge_covered_map = get_coverd_map(G, all_path, chosen_path_idx_list)
-            unvocered_edges = get_unvocered_edge(edge_covered_map)
-            if unvocered_edges:
-                print('uncovered edges:')
-                for unvocered_edge in unvocered_edges:
-                    print(unvocered_edge)
-                print('')
-                
-            print('')
-            
-
-                    
             if all_register_info:
                 control = input("Auto gen reg_info.xlsx? Press Y(yes) or N(no): ")
                 if control.lower() == 'y':
@@ -3620,10 +3492,9 @@ if __name__ == '__main__':
             control = input("Please edit the reg_info.xlsx and in_info.xlsx out_info.xlsx then press C(continue) to gen patterns or press E(exit): ")
             if control.lower() == 'c':
                 print('pattern_auto_gen...')
-                read_path_idx_list = read_chosen_path_idx_list()
-                pattern_auto_gen(read_path_idx_list, components_info, all_path)
+                pattern_auto_gen(greedy_choose_path, components_info)
                 print('done')
-                
+            exit()
             control = input('gen coveragereport, y(es) or n(o)?')
             if control.lower() == 'y':
                 print('gen_coverage_report')
