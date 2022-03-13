@@ -2329,12 +2329,12 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
     if(os.path.isdir(output_dir)):
         shutil.rmtree(output_dir)
         
-    for idx, stereo_path in enumerate(pattern_path):
+    for path_idx, stereo_path in enumerate(pattern_path):
         CONTENTS = []
         contents_append_endl(CONTENTS, SIGNATURE)
         
-        class_name = 'audio_data_phase_auto_gen_{}'.format(idx)
-        path = stereo_path[0]
+        class_name = 'audio_data_phase_auto_gen_{}'.format(path_idx)
+        path = stereo_path[1]
         input  = int(path[-1])
         output = int(path[0])
         input_signal  = components_info[input]['Outputs'][0]
@@ -2374,14 +2374,16 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
             if output_node['NODE_ID'] == components_info[output]['NODE_ID']:
                 contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].channel_enable = 1;' % idx)
 
+                # amp adjustment
+                SRC_cnt   = cnt_SRC_in_path(path, components_info)
+                SRC_decay = 1.5
+                contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold -= %d;' % (idx, SRC_cnt * SRC_decay))
+
         # expect log
         expect_path_log = path_list_to_string(path)
         contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log = "{}";'.format(expect_path_log))
         
-        # amp adjustment
-        SRC_cnt   = cnt_SRC_in_path(path, components_info)
-        SRC_decay = 1.5
-        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold -= %d;' % (idx, SRC_cnt * SRC_decay))
+        
         
         contents_append_tab_endl(CONTENTS, 'endfunction')
         
@@ -2434,7 +2436,7 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
             else:
                 path_string += ' '
 
-        contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(idx, path_string))
+        contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(path_idx, path_string))
         for idx, node_id in enumerate(path):
             node = components_info[node_id]
             temp_content  = '`uvm_info("audio_data_path_pattern", "Node['
@@ -3498,7 +3500,7 @@ if __name__ == '__main__':
             control = input('gen coveragereport, y(es) or n(o)?')
             if control.lower() == 'y':
                 print('gen_coverage_report')
-                gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, chosen_path_idx_list, components_info, all_register_info)
+                # gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, chosen_path_idx_list, components_info, all_register_info)
                 print('done')
                 
 
