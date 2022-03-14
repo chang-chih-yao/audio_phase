@@ -2334,11 +2334,14 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         contents_append_endl(CONTENTS, SIGNATURE)
         
         class_name = 'audio_data_phase_auto_gen_{}'.format(path_idx)
-        path = stereo_path[1]
-        input  = int(path[-1])
-        output = int(path[0])
-        input_signal  = components_info[input]['Outputs'][0]
-        output_signal = components_info[output]['Inputs'][0]
+        path_0 = stereo_path[0]
+        path_1 = stereo_path[1]
+        input_0  = int(path_0[-1])
+        input_1  = int(path_1[-1])
+        output_0 = int(path_0[0])
+        output_1 = int(path_1[0])
+        input_signal  = components_info[input_0]['Outputs'][0]
+        output_signal = components_info[output_0]['Inputs'][0]
         
         ## class init
         if input_signal in VIP_DEFINE_SETTINGS:
@@ -2371,16 +2374,26 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
                 
             # audo gen channel_enable
         for idx, output_node in enumerate(get_nodes_by_type(components_info, 'Output_Node')):
-            if output_node['NODE_ID'] == components_info[output]['NODE_ID']:
+            if output_node['NODE_ID'] == components_info[output_0]['NODE_ID']:
                 contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].channel_enable = 1;' % idx)
 
                 # amp adjustment
-                SRC_cnt   = cnt_SRC_in_path(path, components_info)
+                SRC_cnt   = cnt_SRC_in_path(path_0, components_info)
+                SRC_decay = 1.5
+                contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold -= %d;' % (idx, SRC_cnt * SRC_decay))
+            
+            if output_node['NODE_ID'] == components_info[output_1]['NODE_ID']:
+                contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].channel_enable = 1;' % idx)
+
+                # amp adjustment
+                SRC_cnt   = cnt_SRC_in_path(path_0, components_info)
                 SRC_decay = 1.5
                 contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold -= %d;' % (idx, SRC_cnt * SRC_decay))
 
         # expect log
-        expect_path_log = path_list_to_string(path)
+        expect_path_log = path_list_to_string(path_0)
+        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log = "{}";'.format(expect_path_log))
+        expect_path_log = path_list_to_string(path_1)
         contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log = "{}";'.format(expect_path_log))
         
         
@@ -2409,7 +2422,18 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         contents_append_tab_endl(CONTENTS, 'virtual task audio_data_path_reg_config();')
         contents_append_endl(CONTENTS, '')
         
-        edges  = get_edges_from_path(path)
+        edges  = get_edges_from_path(path_0)
+        for edge in edges:
+            node   = components_info[edge[0]]
+            select = edge[1]
+
+            for idx, select_node in enumerate(node['select']):
+                if select == select_node:
+                    select_signal, set_value, signal_setting = get_signal_setting(edge[0], edge[1], idx, components_info, SIGNAL_SETTINGS)
+                    CONTENTS = add_signal_settings(CONTENTS, select_signal, set_value, signal_setting, edge[0], edge[1])
+                    break
+        
+        edges  = get_edges_from_path(path_1)
         for edge in edges:
             node   = components_info[edge[0]]
             select = edge[1]
@@ -2427,17 +2451,17 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         ## main_phase
         contents_append_tab_endl(CONTENTS, 'virtual task main_phase(uvm_phase phase);')
         path_string = ''
-        for idx, node_id in enumerate(reversed(path)):
+        for idx, node_id in enumerate(reversed(path_0)):
             path_string += '{}'.format(node_id)
             if idx == 0:
                 path_string += '(Input) '
-            elif idx == (len(path)-1) :
+            elif idx == (len(path_0)-1) :
                 path_string += '(Output) '
             else:
                 path_string += ' '
 
         contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(path_idx, path_string))
-        for idx, node_id in enumerate(path):
+        for idx, node_id in enumerate(path_0):
             node = components_info[node_id]
             temp_content  = '`uvm_info("audio_data_path_pattern", "Node['
             temp_content += '%3s' % node_id
