@@ -2386,15 +2386,15 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
                 contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].channel_enable = 1;' % idx)
 
                 # amp adjustment
-                SRC_cnt   = cnt_SRC_in_path(path_0, components_info)
+                SRC_cnt   = cnt_SRC_in_path(path_1, components_info)
                 SRC_decay = 1.5
                 contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold -= %d;' % (idx, SRC_cnt * SRC_decay))
 
         # expect log
         expect_path_log = path_list_to_string(path_0)
-        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log = "{}";'.format(expect_path_log))
+        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log_0 = "{}";'.format(expect_path_log))
         expect_path_log = path_list_to_string(path_1)
-        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log = "{}";'.format(expect_path_log))
+        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log_1 = "{}";'.format(expect_path_log))
         
         
         
@@ -2733,6 +2733,7 @@ def gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, cho
 
 def gen_stereo_componenet_dict():
     stereo_component_dict = dict()
+    # output node
     stereo_component_dict['if1_out_0'] = 'if1_out_1'
     stereo_component_dict['if1_out_1'] = 'if1_out_0'
     stereo_component_dict['if1_out_2'] = 'if1_out_3'
@@ -2784,6 +2785,7 @@ def gen_stereo_componenet_dict():
     stereo_component_dict['dp12_fifo_in0'] = 'dp12_fifo_in1'
     stereo_component_dict['dp12_fifo_in1'] = 'dp12_fifo_in0'
 
+    # input node
     stereo_component_dict['i2s1_in_ch0'] = 'i2s1_in_ch1'
     stereo_component_dict['i2s1_in_ch1'] = 'i2s1_in_ch0'
     stereo_component_dict['i2s1_in_ch2'] = 'i2s1_in_ch3'
@@ -2985,6 +2987,8 @@ def gen_find_path(pn2_has_edge):
         print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]), end='')
         if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
             for output_node in output_node_index:
+                # if output_node <= 321:
+                #     continue
                 if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1]):
                     tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
                     tmp_b = nx.shortest_path(G, pn2_has_edge[i][0], pn2_has_edge[i][1])
@@ -3011,6 +3015,8 @@ def gen_find_path(pn2_has_edge):
                     break
         else:
             for output_node in output_node_index:
+                # if output_node <= 321:
+                #     continue
                 for input_node in input_node_index:
                     #print('Try ', output_node, input_node)
                     if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node):
@@ -3299,6 +3305,7 @@ if __name__ == '__main__':
             if components_info[i]['Type'] == 'Output_Node':
                 output_node_index.append(i)
 
+        print(output_node_index)
         stereo_component_dict = gen_stereo_componenet_dict()
 
         #print(G.nodes)
