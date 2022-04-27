@@ -818,6 +818,33 @@ def gen_audio_data_path_golden_pattern(components_info, output_file_name = 'audi
     
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
+def gen_audio_data_path_golden_pattern(components_info, output_file_name = 'audio_data_phase_golden.sv', output_dir = CONTENT_DIR):
+    CONTENTS = []
+    contents_append_endl(CONTENTS, SIGNATURE)
+    output_nodes = get_nodes_by_type(components_info, 'Output_Node')
+    
+    contents_append_tab_endl(CONTENTS, '/************ audio data path settings begin ************/')
+    contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_enable = 1;')
+    contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_phase_enable = 1;')
+    contents_append_endl(CONTENTS, '')
+    
+    for idx, output_node in enumerate(output_nodes):
+        contents_append_tab_endl(CONTENTS, '// performance check setting of output: {}'.format(output_node['Inputs'][0]))
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].channel_enable     = 0;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].is_dwa             = 0;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].sample_bit         = AUDIO_DATA_PATH_SAMPLE_BIT_16;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].sample_rate        = AUDIO_DATA_PATH_SAMPLE_RATE_48K;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].fs                 = 6144000;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].sample_num         = 320000;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].discard_sample_num = 128000;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].thd_threshold      = -90;' % idx)
+        contents_append_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].audio_data_path_channel_cfg[%3s].amp_threshold      = -8.5;' % idx)
+        contents_append_endl(CONTENTS, '')
+    
+    contents_append_tab_endl(CONTENTS, '/************* audio data path settings end *************/')
+    
+    write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
+
 def gen_transition_model(components_info, output_file_name = 'cust_audio_data_path_transition_model.sv', output_dir = ENV_DIR, output_enable = True):
     CONTENTS = []
     contents_append_endl(CONTENTS, SIGNATURE)
@@ -2349,7 +2376,7 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         if output_signal in VIP_DEFINE_SETTINGS:
             contents_append_endl(CONTENTS, VIP_DEFINE_SETTINGS[output_signal])
             
-        contents_append_endl(CONTENTS, 'class {} extends audio_data_path_golden;'.format(class_name))
+        contents_append_endl(CONTENTS, 'class {} extends audio_data_phase_golden;'.format(class_name))
         contents_append_tab_endl(CONTENTS, '`uvm_component_utils({})'.format(class_name))
         
         contents_append_endl(CONTENTS, '')
