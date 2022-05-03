@@ -818,7 +818,7 @@ def gen_audio_data_path_golden_pattern(components_info, output_file_name = 'audi
     
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
-def gen_audio_data_path_golden_pattern(components_info, output_file_name = 'audio_data_phase_golden.sv', output_dir = CONTENT_DIR):
+def gen_audio_data_phase_golden_pattern(components_info, output_file_name = 'audio_data_phase_golden.sv', output_dir = CONTENT_DIR):
     CONTENTS = []
     contents_append_endl(CONTENTS, SIGNATURE)
     output_nodes = get_nodes_by_type(components_info, 'Output_Node')
@@ -3269,6 +3269,7 @@ if __name__ == '__main__':
             
             print('gen_audio_data_path_golden_pattern...')
             gen_audio_data_path_golden_pattern(components_info)
+            gen_audio_data_phase_golden_pattern(components_info)
             print('done\n')
             
         if not FOR_SD_CHECK_ONLY:
