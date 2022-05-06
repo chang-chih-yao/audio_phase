@@ -2507,6 +2507,39 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
                 temp_content += '%35s' % sig_info
                 temp_content += '", UVM_LOW)'
                 contents_append_tab_tab_endl(CONTENTS, temp_content)
+
+        contents_append_endl(CONTENTS, '')
+        
+        path_string = ''
+        for idx, node_id in enumerate(reversed(path_1)):
+            path_string += '{}'.format(node_id)
+            if idx == 0:
+                path_string += '(Input) '
+            elif idx == (len(path_1)-1) :
+                path_string += '(Output) '
+            else:
+                path_string += ' '
+
+        contents_append_tab_tab_endl(CONTENTS, '`uvm_info("audio_data_path_pattern", "Path[{}]: {}", UVM_LOW)'.format(path_idx, path_string))
+        for idx, node_id in enumerate(path_1):
+            node = components_info[node_id]
+            temp_content  = '`uvm_info("audio_data_path_pattern", "Node['
+            temp_content += '%3s' % node_id
+            temp_content += ']('
+            temp_content += '%35s' % node['Type']
+            
+            if node['Type'] == 'Output_Node':
+                sig_info = node['Inputs'][0]
+                temp_content += '),  input signal: '
+                temp_content += '%35s' % sig_info
+                temp_content += '", UVM_LOW)'
+                contents_append_tab_tab_endl(CONTENTS, temp_content)
+            else:
+                sig_info = node['Outputs'][0]
+                temp_content += '), output signal: '
+                temp_content += '%35s' % sig_info
+                temp_content += '", UVM_LOW)'
+                contents_append_tab_tab_endl(CONTENTS, temp_content)
             
         contents_append_tab_tab_endl(CONTENTS, 'super.main_phase(phase);')
         contents_append_tab_endl(CONTENTS, 'endtask')
@@ -3091,6 +3124,10 @@ def greedy_pick_path(find_path, pn2_has_edge):
     start_idx = 0                    # 從 start_idx 開始找 find_path for loop
     DEF_MAX_VAULE = 99999999
     end_idx = DEF_MAX_VAULE
+
+    pn2_has_edge_copy = pn2_has_edge.copy()
+    path_idx = 0
+    tmp_s = ''
     
     start_time = time.time()
 
@@ -3149,13 +3186,46 @@ def greedy_pick_path(find_path, pn2_has_edge):
             start_idx = 0
             continue
 
-        print(max_match_num[0], max_match_num[1])
+        
+        
 
         last_max_num = max_match_num[0]                 # update last_max_num value
         start_idx = max_match_num[1] - len(useless_path)
         end_idx = DEF_MAX_VAULE
 
         greedy_choose_path.append(find_path[max_match_num[1]])
+        path_idx += 1
+
+        tmp_s += 'PATH_IDX ' + str(path_idx) + ' MAX_MATCH_NUM ' + str(max_match_num[0]) + '\n'
+
+        debug_idx = []
+        for edge_idx in range(len(pn2_has_edge_copy)):
+            mono_0_path = find_path[max_match_num[1]][0]
+            for mono_0_pre in range(len(mono_0_path)):
+                if pn2_has_edge_copy[edge_idx][0] == mono_0_path[mono_0_pre]:
+                    for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                        if pn2_has_edge_copy[edge_idx][1] == mono_0_path[mono_0_post]:
+                            #print('mono_0 find edge :', edge_idx, pn2_has_edge_copy[edge_idx])
+                            debug_idx.append(edge_idx)
+
+            mono_1_path = find_path[max_match_num[1]][1]
+            for mono_1_pre in range(len(mono_1_path)):
+                if pn2_has_edge_copy[edge_idx][0] == mono_1_path[mono_1_pre]:
+                    for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                        if pn2_has_edge_copy[edge_idx][1] == mono_1_path[mono_1_post]:
+                            #print('mono_1 find edge :', edge_idx, pn2_has_edge_copy[edge_idx])
+                            debug_idx.append(edge_idx)
+        
+        for item in debug_idx:
+            tmp_s += str(pn2_has_edge_copy[item]) + ' '
+
+        tmp_s += '\n' + 'array len ' + str(len(debug_idx)) + '\n'
+
+        
+
+
+
+
         useless_path.append(max_match_num[1])
         delete_tmp = sorted(useless_path, reverse=True)
         for item in delete_tmp:
@@ -3168,6 +3238,8 @@ def greedy_pick_path(find_path, pn2_has_edge):
             break
     
     print(time.time()-start_time)
+    with open('check_log/audio_data_phase_path_log.txt', 'w') as f:
+        f.write(tmp_s)
     return greedy_choose_path, pn2_has_edge
 
 if __name__ == '__main__':
