@@ -2422,6 +2422,9 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log_0 = "{}";'.format(expect_path_log))
         expect_path_log = path_list_to_string(path_1)
         contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log_1 = "{}";'.format(expect_path_log))
+
+        # for data phase, combination index
+        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].combination_idx = new[{}];'.format(expect_path_log))
         
         
         
@@ -3194,9 +3197,10 @@ def greedy_pick_path(find_path, pn2_has_edge):
         end_idx = DEF_MAX_VAULE
 
         greedy_choose_path.append(find_path[max_match_num[1]])
+        tmp_s += 'PATH_IDX ' + str(path_idx) + ' MAX_MATCH_NUM ' + str(max_match_num[0]) + '\n'
         path_idx += 1
 
-        tmp_s += 'PATH_IDX ' + str(path_idx) + ' MAX_MATCH_NUM ' + str(max_match_num[0]) + '\n'
+        
 
         debug_idx = []
         for edge_idx in range(len(pn2_has_edge_copy)):
@@ -3217,7 +3221,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
                             debug_idx.append(edge_idx)
         
         for item in debug_idx:
-            tmp_s += str(pn2_has_edge_copy[item]) + ' '
+            tmp_s += str(item) + ':' + str(pn2_has_edge_copy[item]) + ', '
 
         tmp_s += '\n' + 'array len ' + str(len(debug_idx)) + '\n'
 
