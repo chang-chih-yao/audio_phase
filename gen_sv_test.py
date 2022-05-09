@@ -1482,6 +1482,54 @@ def gen_coverage(components_info, output_file_name = 'cust_audio_data_path_cover
     
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
+def gen_coverage_data_phase(components_info, output_file_name = 'cust_audio_data_phase_coverage_model.sv', output_dir = ENV_DIR):
+    CONTENTS  = []
+    contents_append_endl(CONTENTS, SIGNATURE) 
+    contents_append_endl(CONTENTS, '`ifndef CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
+    contents_append_endl(CONTENTS, '`define CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
+    contents_append_endl(CONTENTS, '')
+    contents_append_endl(CONTENTS, 'class cust_audio_data_phase_coverage_model extends audio_data_path_coverage_model #(cust_audio_data_path_dump_mux_transaction, cust_audio_data_path_transition_model);')
+    contents_append_endl(CONTENTS, '')
+    contents_append_tab_endl(CONTENTS, '`uvm_component_utils(cust_audio_data_phase_coverage_model)')
+    contents_append_endl(CONTENTS, '')
+    contents_append_tab_endl(CONTENTS, 'covergroup data_phase_combination;')
+    contents_append_tab_tab_endl(CONTENTS, 'option.per_instance = 1;')
+    contents_append_tab_tab_endl(CONTENTS, 'coverpoint combination_idx')
+    
+    
+
+    contents_append_tab_endl(CONTENTS, 'endgroup')
+    contents_append_endl(CONTENTS, '')
+        
+    contents_append_tab_endl(CONTENTS, 'extern function new(string name = "cust_audio_data_phase_coverage_model", uvm_component parent);')
+    contents_append_tab_endl(CONTENTS, 'extern virtual function void sample_cov_data_phase();')
+    contents_append_tab_endl(CONTENTS, 'extern virtual function real get_cov_data_phase();')
+    contents_append_endl(CONTENTS, 'endclass: cust_audio_data_phase_coverage_model')
+    
+    contents_append_endl(CONTENTS, '')
+    contents_append_endl(CONTENTS, '/** new function for cust_audio_data_phase_coverage_model */')
+    contents_append_endl(CONTENTS, 'function cust_audio_data_phase_coverage_model::new(string name = "cust_audio_data_phase_coverage_model", uvm_component parent);')
+    contents_append_tab_endl(CONTENTS, 'super.new(name, parent);')
+    contents_append_tab_endl(CONTENTS, 'data_phase_combination = new();')
+    contents_append_endl(CONTENTS, 'endfunction: new')
+    
+    contents_append_endl(CONTENTS, '')
+    contents_append_endl(CONTENTS, '/** sample cov for cust_audio_data_phase_coverage_model */')
+    contents_append_endl(CONTENTS, 'function void cust_audio_data_phase_coverage_model::_data_phase();')
+    contents_append_tab_endl(CONTENTS, 'data_phase_combination.sample();')
+    contents_append_endl(CONTENTS, 'endfunction: _data_phase')
+    
+    contents_append_endl(CONTENTS, '')
+    contents_append_endl(CONTENTS, '/** get cov for cust_audio_data_phase_coverage_model */')
+    contents_append_endl(CONTENTS, 'function real cust_audio_data_phase_coverage_model::get_cov_data_phase();')
+    contents_append_tab_endl(CONTENTS, 'get_cov_data_phase = data_phase_combination.get_inst_coverage();')
+    contents_append_endl(CONTENTS, 'endfunction: get_cov_data_phase')
+    
+    contents_append_endl(CONTENTS, '')
+    contents_append_endl(CONTENTS, '`endif // CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
+    
+    write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
+
 def gen_grapth(components_info):
     color_map = []
     G = nx.DiGraph()
@@ -2349,7 +2397,7 @@ def cnt_SRC_in_path(path, components_info):
         
     
 
-def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in_info.xlsx', 'out_info.xlsx'], reg_info_file = 'reg_info.xlsx', output_dir = PATTERN_DIR, input_dir = INPUT_DIR):
+def pattern_auto_gen(pattern_path, components_info, combination_idx, in_and_out_info_files = ['in_info.xlsx', 'out_info.xlsx'], reg_info_file = 'reg_info.xlsx', output_dir = PATTERN_DIR, input_dir = INPUT_DIR):
     VIP_DEFINE_SETTINGS, VIP_ENABLE_SETTINGS = parse_in_and_out_info(in_and_out_info_files, input_dir)
     SIGNAL_SETTINGS = parse_reg_info(reg_info_file, input_dir)
 
@@ -2424,7 +2472,13 @@ def pattern_auto_gen(pattern_path, components_info, in_and_out_info_files = ['in
         contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].expect_path_log_1 = "{}";'.format(expect_path_log))
 
         # for data phase, combination index
-        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].combination_idx = new[{}];'.format(expect_path_log))
+        contents_append_tab_tab_endl(CONTENTS, 'sys_cfg.audio_data_path_cfg[0].combination_idx = new[{}];'.format(len(combination_idx[path_idx])))
+        combination_idx_arr_str = "sys_cfg.audio_data_path_cfg[0].combination_idx = '{" + str(combination_idx[path_idx][0])
+        for i in range(len(combination_idx[path_idx])):
+            if i != 0:
+                combination_idx_arr_str += ', ' + str(combination_idx[path_idx][i])
+        combination_idx_arr_str += '};'
+        contents_append_tab_tab_endl(CONTENTS, combination_idx_arr_str)
         
         
         
@@ -3131,6 +3185,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
     pn2_has_edge_copy = pn2_has_edge.copy()
     path_idx = 0
     tmp_s = ''
+    combination_idx = []
     
     start_time = time.time()
 
@@ -3220,6 +3275,8 @@ def greedy_pick_path(find_path, pn2_has_edge):
                             #print('mono_1 find edge :', edge_idx, pn2_has_edge_copy[edge_idx])
                             debug_idx.append(edge_idx)
         
+        combination_idx.append(debug_idx)
+
         for item in debug_idx:
             tmp_s += str(item) + ':' + str(pn2_has_edge_copy[item]) + ', '
 
@@ -3242,9 +3299,20 @@ def greedy_pick_path(find_path, pn2_has_edge):
             break
     
     print(time.time()-start_time)
+
+    #print(pn2_has_edge)
+    #print(pn2_has_edge_copy)
+    for i in range(len(pn2_has_edge_copy)):
+        print(i, pn2_has_edge_copy[i])
+    print()
+    for i in range(len(pn2_has_edge_copy)):
+        for item in pn2_has_edge:
+            if pn2_has_edge_copy[i] == item:
+                print(i)
+
     with open('check_log/audio_data_phase_path_log.txt', 'w') as f:
         f.write(tmp_s)
-    return greedy_choose_path, pn2_has_edge
+    return greedy_choose_path, pn2_has_edge, combination_idx
 
 if __name__ == '__main__':
     ################################################################## main ##################################################################
@@ -3587,14 +3655,18 @@ if __name__ == '__main__':
                 greedy_choose_path = pickle.load(f)
             with open('input/uncover_pairs.pickle', 'rb') as f:
                 uncover_pairs = pickle.load(f)
+            with open('input/combination_idx.pickle', 'rb') as f:
+                combination_idx = pickle.load(f)
         else:
             print('Start to gen greedy path data...')
-            greedy_choose_path, uncover_pairs = greedy_pick_path(find_path, pn2_has_edge)
+            greedy_choose_path, uncover_pairs, combination_idx = greedy_pick_path(find_path, pn2_has_edge)
             print('Start to save data...')
             with open('input/greedy_choose_path.pickle', 'wb') as f:
                 pickle.dump(greedy_choose_path, f)
             with open('input/uncover_pairs.pickle', 'wb') as f:
                 pickle.dump(uncover_pairs, f)
+            with open('input/combination_idx.pickle', 'wb') as f:
+                pickle.dump(combination_idx, f)
             print('Finish !!')
         
         #print(greedy_choose_path)
@@ -3629,7 +3701,7 @@ if __name__ == '__main__':
             control = input("Please edit the reg_info.xlsx and in_info.xlsx out_info.xlsx then press C(continue) to gen patterns or press E(exit): ")
             if control.lower() == 'c':
                 print('pattern_auto_gen...')
-                pattern_auto_gen(greedy_choose_path, components_info)
+                pattern_auto_gen(greedy_choose_path, components_info, combination_idx)
                 print('done')
             exit()
             control = input('gen coveragereport, y(es) or n(o)?')
