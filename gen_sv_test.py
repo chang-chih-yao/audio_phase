@@ -1482,7 +1482,7 @@ def gen_coverage(components_info, output_file_name = 'cust_audio_data_path_cover
     
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
-def gen_coverage_data_phase(components_info, output_file_name = 'cust_audio_data_phase_coverage_model.sv', output_dir = ENV_DIR):
+def gen_coverage_data_phase(components_info, pn2_has_edge_covered, output_file_name = 'cust_audio_data_phase_coverage_model.sv', output_dir = ENV_DIR):
     CONTENTS  = []
     contents_append_endl(CONTENTS, SIGNATURE) 
     contents_append_endl(CONTENTS, '`ifndef CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
@@ -3182,10 +3182,10 @@ def greedy_pick_path(find_path, pn2_has_edge):
     DEF_MAX_VAULE = 99999999
     end_idx = DEF_MAX_VAULE
 
-    pn2_has_edge_copy = pn2_has_edge.copy()
+    uncover_pairs = pn2_has_edge.copy()
     path_idx = 0
     tmp_s = ''
-    combination_idx = []
+    pattern_combination_idx = []
     
     start_time = time.time()
 
@@ -3193,26 +3193,26 @@ def greedy_pick_path(find_path, pn2_has_edge):
         if end_idx == DEF_MAX_VAULE:
             max_match_num = [0, 0, []]
             useless_path = []
-        print('now find_path :', len(find_path), 'now pn2_has_edge :', len(pn2_has_edge))
+        print('now find_path :', len(find_path), 'now uncover_pairs :', len(uncover_pairs))
         for i in range(len(find_path)):
             if i < start_idx or i > end_idx:      # start_idx >= i >= end_idx  not continue
                 continue
             delete_idx = []
-            for edge_idx in range(len(pn2_has_edge)):
+            for edge_idx in range(len(uncover_pairs)):
                 mono_0_path = find_path[i][0]
                 for mono_0_pre in range(len(mono_0_path)):
-                    if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
+                    if uncover_pairs[edge_idx][0] == mono_0_path[mono_0_pre]:
                         for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                            if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
-                                #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                            if uncover_pairs[edge_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find edge :', edge_idx, uncover_pairs[edge_idx])
                                 delete_idx.append(edge_idx)
 
                 mono_1_path = find_path[i][1]
                 for mono_1_pre in range(len(mono_1_path)):
-                    if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
+                    if uncover_pairs[edge_idx][0] == mono_1_path[mono_1_pre]:
                         for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                            if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
-                                #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
+                            if uncover_pairs[edge_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find edge :', edge_idx, uncover_pairs[edge_idx])
                                 delete_idx.append(edge_idx)
             
             if len(delete_idx) == 0:
@@ -3232,7 +3232,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
             # print(delete_idx)
             # print(len(delete_idx))
         
-        if max_match_num[0] == 0:       # can't be found pn2_has_edge anymore
+        if max_match_num[0] == 0:       # can't be found uncover_pairs anymore
             if start_idx != 0:
                 start_idx = 0
                 continue
@@ -3258,27 +3258,27 @@ def greedy_pick_path(find_path, pn2_has_edge):
         
 
         debug_idx = []
-        for edge_idx in range(len(pn2_has_edge_copy)):
+        for edge_idx in range(len(pn2_has_edge)):
             mono_0_path = find_path[max_match_num[1]][0]
             for mono_0_pre in range(len(mono_0_path)):
-                if pn2_has_edge_copy[edge_idx][0] == mono_0_path[mono_0_pre]:
+                if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
                     for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                        if pn2_has_edge_copy[edge_idx][1] == mono_0_path[mono_0_post]:
-                            #print('mono_0 find edge :', edge_idx, pn2_has_edge_copy[edge_idx])
+                        if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
+                            #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
                             debug_idx.append(edge_idx)
 
             mono_1_path = find_path[max_match_num[1]][1]
             for mono_1_pre in range(len(mono_1_path)):
-                if pn2_has_edge_copy[edge_idx][0] == mono_1_path[mono_1_pre]:
+                if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
                     for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                        if pn2_has_edge_copy[edge_idx][1] == mono_1_path[mono_1_post]:
-                            #print('mono_1 find edge :', edge_idx, pn2_has_edge_copy[edge_idx])
+                        if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
+                            #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
                             debug_idx.append(edge_idx)
         
-        combination_idx.append(debug_idx)
+        pattern_combination_idx.append(debug_idx)
 
         for item in debug_idx:
-            tmp_s += str(item) + ':' + str(pn2_has_edge_copy[item]) + ', '
+            tmp_s += str(item) + ':' + str(pn2_has_edge[item]) + ', '
 
         tmp_s += '\n' + 'array len ' + str(len(debug_idx)) + '\n'
 
@@ -3293,26 +3293,20 @@ def greedy_pick_path(find_path, pn2_has_edge):
             del find_path[item]
         delete_tmp = max_match_num[2][::-1]
         for item in delete_tmp:
-            del pn2_has_edge[item]
+            del uncover_pairs[item]
         
-        if len(pn2_has_edge) == 0:       # covered every pair in pn2_has_edge -> finish
+        if len(uncover_pairs) == 0:       # covered every pair in uncover_pairs -> finish
             break
     
     print(time.time()-start_time)
 
+    #print(uncover_pairs)
     #print(pn2_has_edge)
-    #print(pn2_has_edge_copy)
-    for i in range(len(pn2_has_edge_copy)):
-        print(i, pn2_has_edge_copy[i])
-    print()
-    for i in range(len(pn2_has_edge_copy)):
-        for item in pn2_has_edge:
-            if pn2_has_edge_copy[i] == item:
-                print(i)
+    
 
     with open('check_log/audio_data_phase_path_log.txt', 'w') as f:
         f.write(tmp_s)
-    return greedy_choose_path, pn2_has_edge, combination_idx
+    return greedy_choose_path, uncover_pairs, pattern_combination_idx
 
 if __name__ == '__main__':
     ################################################################## main ##################################################################
@@ -3655,18 +3649,18 @@ if __name__ == '__main__':
                 greedy_choose_path = pickle.load(f)
             with open('input/uncover_pairs.pickle', 'rb') as f:
                 uncover_pairs = pickle.load(f)
-            with open('input/combination_idx.pickle', 'rb') as f:
-                combination_idx = pickle.load(f)
+            with open('input/pattern_combination_idx.pickle', 'rb') as f:
+                pattern_combination_idx = pickle.load(f)
         else:
             print('Start to gen greedy path data...')
-            greedy_choose_path, uncover_pairs, combination_idx = greedy_pick_path(find_path, pn2_has_edge)
+            greedy_choose_path, uncover_pairs, pattern_combination_idx = greedy_pick_path(find_path, pn2_has_edge)
             print('Start to save data...')
             with open('input/greedy_choose_path.pickle', 'wb') as f:
                 pickle.dump(greedy_choose_path, f)
             with open('input/uncover_pairs.pickle', 'wb') as f:
                 pickle.dump(uncover_pairs, f)
-            with open('input/combination_idx.pickle', 'wb') as f:
-                pickle.dump(combination_idx, f)
+            with open('input/pattern_combination_idx.pickle', 'wb') as f:
+                pickle.dump(pattern_combination_idx, f)
             print('Finish !!')
         
         #print(greedy_choose_path)
@@ -3675,6 +3669,18 @@ if __name__ == '__main__':
         print('--------------------- uncovered pairs ----------------------')
         print(uncover_pairs)
         print('uncovered pairs num :', len(uncover_pairs))
+
+
+        pn2_has_edge_covered = []
+        # for i in range(len(pn2_has_edge)):
+        #     print(i, pn2_has_edge[i])
+        # print()
+        for i in range(len(pn2_has_edge)):
+            for item in uncover_pairs:
+                if pn2_has_edge[i] != item:
+                    pn2_has_edge_covered.append(pn2_has_edge[i])
+
+        gen_coverage_data_phase(components_info, pn2_has_edge_covered)
 
         
         if not FOR_SD_CHECK_ONLY:
@@ -3701,7 +3707,7 @@ if __name__ == '__main__':
             control = input("Please edit the reg_info.xlsx and in_info.xlsx out_info.xlsx then press C(continue) to gen patterns or press E(exit): ")
             if control.lower() == 'c':
                 print('pattern_auto_gen...')
-                pattern_auto_gen(greedy_choose_path, components_info, combination_idx)
+                pattern_auto_gen(greedy_choose_path, components_info, pattern_combination_idx)
                 print('done')
             exit()
             control = input('gen coveragereport, y(es) or n(o)?')
