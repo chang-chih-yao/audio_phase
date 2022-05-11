@@ -1482,28 +1482,33 @@ def gen_coverage(components_info, output_file_name = 'cust_audio_data_path_cover
     
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
-def gen_coverage_data_phase(components_info, pn2_has_edge_covered, output_file_name = 'cust_audio_data_phase_coverage_model.sv', output_dir = ENV_DIR):
+def gen_coverage_data_phase(pn2_has_edge_covered, output_file_name = 'cust_audio_data_phase_coverage_model.sv', output_dir = ENV_DIR):
     CONTENTS  = []
     contents_append_endl(CONTENTS, SIGNATURE) 
     contents_append_endl(CONTENTS, '`ifndef CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
     contents_append_endl(CONTENTS, '`define CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
     contents_append_endl(CONTENTS, '')
-    contents_append_endl(CONTENTS, 'class cust_audio_data_phase_coverage_model extends audio_data_path_coverage_model #(cust_audio_data_path_dump_mux_transaction, cust_audio_data_path_transition_model);')
+    contents_append_endl(CONTENTS, 'class cust_audio_data_phase_coverage_model extends audio_data_phase_coverage_model #(cust_audio_data_path_dump_mux_transaction, cust_audio_data_path_transition_model);')
     contents_append_endl(CONTENTS, '')
     contents_append_tab_endl(CONTENTS, '`uvm_component_utils(cust_audio_data_phase_coverage_model)')
     contents_append_endl(CONTENTS, '')
     contents_append_tab_endl(CONTENTS, 'covergroup data_phase_combination;')
     contents_append_tab_tab_endl(CONTENTS, 'option.per_instance = 1;')
     contents_append_tab_tab_endl(CONTENTS, 'coverpoint combination_idx')
+    contents_append_tab_tab_endl(CONTENTS, '{')
     
-    
+    for i in range(len(pn2_has_edge_covered)):
+        temp_str = '  bins C_{}_{} = '.format(pn2_has_edge_covered[i][0], pn2_has_edge_covered[i][1])
+        temp_str += '{' + str(i) + '};'
+        contents_append_tab_tab_endl(CONTENTS, temp_str)
 
+    contents_append_tab_tab_endl(CONTENTS, '}')
     contents_append_tab_endl(CONTENTS, 'endgroup')
     contents_append_endl(CONTENTS, '')
         
     contents_append_tab_endl(CONTENTS, 'extern function new(string name = "cust_audio_data_phase_coverage_model", uvm_component parent);')
-    contents_append_tab_endl(CONTENTS, 'extern virtual function void sample_cov_data_phase();')
-    contents_append_tab_endl(CONTENTS, 'extern virtual function real get_cov_data_phase();')
+    contents_append_tab_endl(CONTENTS, 'extern virtual function void sample_cov();')
+    contents_append_tab_endl(CONTENTS, 'extern virtual function real get_cov();')
     contents_append_endl(CONTENTS, 'endclass: cust_audio_data_phase_coverage_model')
     
     contents_append_endl(CONTENTS, '')
@@ -1515,15 +1520,18 @@ def gen_coverage_data_phase(components_info, pn2_has_edge_covered, output_file_n
     
     contents_append_endl(CONTENTS, '')
     contents_append_endl(CONTENTS, '/** sample cov for cust_audio_data_phase_coverage_model */')
-    contents_append_endl(CONTENTS, 'function void cust_audio_data_phase_coverage_model::_data_phase();')
-    contents_append_tab_endl(CONTENTS, 'data_phase_combination.sample();')
-    contents_append_endl(CONTENTS, 'endfunction: _data_phase')
+    contents_append_endl(CONTENTS, 'function void cust_audio_data_phase_coverage_model::sample_cov();')
+    contents_append_tab_endl(CONTENTS, 'for(int i=0; i<$size(cfg.combination_idx); i++) begin')
+    contents_append_tab_endl(CONTENTS, '  combination_idx = cfg.combination_idx[i];')
+    contents_append_tab_endl(CONTENTS, '  data_phase_combination.sample();')
+    contents_append_tab_endl(CONTENTS, 'end')
+    contents_append_endl(CONTENTS, 'endfunction: sample_cov')
     
     contents_append_endl(CONTENTS, '')
     contents_append_endl(CONTENTS, '/** get cov for cust_audio_data_phase_coverage_model */')
-    contents_append_endl(CONTENTS, 'function real cust_audio_data_phase_coverage_model::get_cov_data_phase();')
-    contents_append_tab_endl(CONTENTS, 'get_cov_data_phase = data_phase_combination.get_inst_coverage();')
-    contents_append_endl(CONTENTS, 'endfunction: get_cov_data_phase')
+    contents_append_endl(CONTENTS, 'function real cust_audio_data_phase_coverage_model::get_cov();')
+    contents_append_tab_endl(CONTENTS, 'get_cov = data_phase_combination.get_inst_coverage();')
+    contents_append_endl(CONTENTS, 'endfunction: get_cov')
     
     contents_append_endl(CONTENTS, '')
     contents_append_endl(CONTENTS, '`endif // CUST_AUDIO_DATA_PHASE_COVERAGE_MODEL__SV')
@@ -3514,7 +3522,7 @@ if __name__ == '__main__':
                     short_tmp = nx.shortest_path(G, item[1], item[0])
                     if len(short_tmp) >= 2 and len(short_tmp) <= 3:
                         cou = 0
-                        for item in nx.all_simple_paths(G, item[1], item[0]):
+                        for all_path in nx.all_simple_paths(G, item[1], item[0]):
                             # 計算所有路徑, 如果只有唯一路徑, cou == 1, 否則 cou >= 2
                             if cou >= 2:
                                 break
@@ -3527,7 +3535,6 @@ if __name__ == '__main__':
                 pn2_has_edge.append([item[0], item[1]])
         print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
         print('------------------------------------------------------------')
-        #print(pn2_has_edge)
 
         ########################## find path ##########################
 
@@ -3676,11 +3683,15 @@ if __name__ == '__main__':
         #     print(i, pn2_has_edge[i])
         # print()
         for i in range(len(pn2_has_edge)):
+            flag = 0
             for item in uncover_pairs:
-                if pn2_has_edge[i] != item:
-                    pn2_has_edge_covered.append(pn2_has_edge[i])
+                if pn2_has_edge[i] == item:
+                    flag = 1
+                    break
+            if flag == 0:
+                pn2_has_edge_covered.append(pn2_has_edge[i])
 
-        gen_coverage_data_phase(components_info, pn2_has_edge_covered)
+        gen_coverage_data_phase(pn2_has_edge_covered)
 
         
         if not FOR_SD_CHECK_ONLY:
