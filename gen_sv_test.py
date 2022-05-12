@@ -2923,26 +2923,39 @@ def gen_stereo_componenet_dict():
     stereo_component_dict['i2s2_in_ch1'] = 'i2s2_in_ch0'
     stereo_component_dict['i2s2_in_ch2'] = 'i2s2_in_ch3'
     stereo_component_dict['i2s2_in_ch3'] = 'i2s2_in_ch2'
-    stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_fa'
-    stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_ri'
-    stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_fa'
-    stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_ri'
-    stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_fa'
-    stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_ri'
-    stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_fa'
-    stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_ri'
     stereo_component_dict['i2s3_in_ch0'] = 'i2s3_in_ch1'
     stereo_component_dict['i2s3_in_ch1'] = 'i2s3_in_ch0'
     stereo_component_dict['i2s4_in_ch0'] = 'i2s4_in_ch1'
     stereo_component_dict['i2s4_in_ch1'] = 'i2s4_in_ch0'
-    stereo_component_dict['sdm_09_l'] = 'sdm_09_r'
-    stereo_component_dict['sdm_09_r'] = 'sdm_09_l'
-    stereo_component_dict['sdm_08_l'] = 'sdm_08_r'
-    stereo_component_dict['sdm_08_r'] = 'sdm_08_l'
     stereo_component_dict['sdw_dp_1_ch0'] = 'sdw_dp_1_ch1'
     stereo_component_dict['sdw_dp_1_ch1'] = 'sdw_dp_1_ch0'
     stereo_component_dict['sdw_dp_1_ch2'] = 'sdw_dp_1_ch3'
     stereo_component_dict['sdw_dp_1_ch3'] = 'sdw_dp_1_ch2'
+    stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_ri'
+    stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_fa'
+    stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_ri'
+    stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_fa'
+    stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_ri'
+    stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_fa'
+    stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_ri'
+    stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_fa'
+    stereo_component_dict['sdm_09_l'] = 'sdm_09_l'
+    stereo_component_dict['sdm_09_r'] = 'sdm_09_r'
+    stereo_component_dict['sdm_08_l'] = 'sdm_08_l'
+    stereo_component_dict['sdm_08_r'] = 'sdm_08_r'
+    # stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_fa'
+    # stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_ri'
+    # stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_fa'
+    # stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_ri'
+    # stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_fa'
+    # stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_ri'
+    # stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_fa'
+    # stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_ri'
+    # stereo_component_dict['sdm_09_l'] = 'sdm_09_r'
+    # stereo_component_dict['sdm_09_r'] = 'sdm_09_l'
+    # stereo_component_dict['sdm_08_l'] = 'sdm_08_r'
+    # stereo_component_dict['sdm_08_r'] = 'sdm_08_l'
+    
     
     return stereo_component_dict
 
@@ -2954,8 +2967,9 @@ def only_direct_edge(G, node_0, node_1):
 
 
 def find_stereo_path(G, components_info, input_node_index, stereo_component_dict, mono):
+    # give one path(mono) -> find another stereo path(stereo_path)
     stereo_path = []
-    path_len = 0
+    path_len = 0           # stereo_path now path length
     success_flag = True
     stereo_output_name = stereo_component_dict[components_info[mono[0]]['Inputs'][0]]   # find stereo output node name
     for i in range(len(components_info)):
@@ -2970,12 +2984,12 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
             if components_info[stereo_path[-1]]['Type'].find('MUX') != -1:
                 mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
                 next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
-                if mono_component_selects != next_component_selects:
+                if mono_component_selects != next_component_selects:     # 
                     # print(mono_component_selects, next_component_selects)
                     # print('MUX sel diff !')
                     next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
                     next_node_index = components_info[stereo_path[-1]]['select'][next_sel_index]
-                    if next_node_index in input_node_index:            # this node is end of path -> break while loop
+                    if next_node_index in input_node_index:            # if this node is end of path -> break while loop
                         stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
                         break
                     else:
@@ -2996,13 +3010,22 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
     #     print(stereo_path)
     #     exit()
 
-    if len(set(mono+stereo_path)) != len(mono+stereo_path):
-        for item in (set(mono) & set(stereo_path)):
-            if item not in input_node_index:
-                #print('Stereo path found repeated node not in input_node list !!!!')
-                success_flag = False
-                #exit()
-        #exit()
+    # 檢查兩個stereo paths的所有node是否都是不相同的
+    if success_flag:
+        if len(set(mono+stereo_path)) != len(mono+stereo_path):
+            for item in (set(mono) & set(stereo_path)):       # set(mono) & set(stereo_path) -> mono跟stereo_path重複的點的集合
+                if item not in input_node_index:
+                    #print('Stereo path found repeated node not in input_node list !!!!')
+                    success_flag = False
+                    #exit()
+            #exit()
+
+    if success_flag:
+        stereo_input_name = stereo_component_dict[components_info[mono[-1]]['Outputs'][0]]   # find stereo input node name
+        if stereo_input_name != components_info[stereo_path[-1]]['Outputs'][0]:                                             # 若找到的另一條stereo_path的input node跟原本的input node沒有成對
+            success_flag = False
+            print('input node diff,', stereo_input_name, components_info[stereo_path[-1]]['Outputs'][0])
+            exit()
 
     #print(stereo_path)
     return success_flag, stereo_path
