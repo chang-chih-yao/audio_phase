@@ -1,4 +1,3 @@
-from pickle import NONE
 import re
 import pandas as pd
 import math
@@ -12,7 +11,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
 from openpyxl.styles.borders import Border, Side
 import math
-import os.path
+import os
 from sys import platform
 import json
 # from py2cytoscape.data.cyrest_client import CyRestClient
@@ -30,8 +29,8 @@ import multiprocessing as mp
 from itertools import permutations, combinations
 import numpy as np
 import time
-from difflib import SequenceMatcher
 import pickle
+import filecmp
 
 ########################## global settings ##########################
 SIGNATURE = '/*********** Howard Auto Gen Tools ***********/\n'
@@ -3339,6 +3338,29 @@ def greedy_pick_path(find_path, pn2_has_edge):
         f.write(tmp_s)
     return greedy_choose_path, uncover_pairs, pattern_combination_idx
 
+def read_pickle(file_name):
+    file_dir = data_phase_array_data_dir + file_name + '.pickle'
+    if os.path.exists(file_dir):
+        with open(file_dir, 'rb') as f:
+            data = pickle.load(f)
+        return data
+    else:
+        print(file_dir, 'not exist!!')
+        exit()
+
+def dump_pickle(file_name, data):
+    file_dir = data_phase_array_data_dir + file_name + '.pickle'
+    if os.path.exists(file_dir):
+        with open(file_dir, 'rb') as f:
+            old_data = pickle.load(f)
+        if old_data != data:          # if data changed
+            print(file_name + ' data changed...  backup old data!')
+            src = file_dir
+            des = data_phase_array_data_dir + 'backup/' + file_name + '.pickle'
+            shutil.copy(src, des)
+    with open(file_dir, 'wb') as f:
+        pickle.dump(data, f)
+
 if __name__ == '__main__':
     ################################################################## main ##################################################################
     components_parsing_rule = get_components_parsing_rule()
@@ -3347,6 +3369,14 @@ if __name__ == '__main__':
     components_info = to_lower(components_info)
     components_info = sort_components_info(components_info)
     components_info = set_components_id(components_info)
+
+    data_phase_array_data_dir = 'input/data_phase/'
+
+    if(os.path.isdir('input/data_phase/') == False):
+        os.mkdir('input/data_phase/')
+    if(os.path.isdir('input/data_phase/backup/') == False):
+        os.mkdir('input/data_phase/backup/')
+        
 
     # find MIX_xto1, auto gen x new blocks
     old_component_num = len(components_info)
@@ -3561,24 +3591,18 @@ if __name__ == '__main__':
 
         ########################## find path ##########################
 
-        if input('Read path from files?(y/n) ').lower() == 'y':
-            with open('input/find_path.pickle', 'rb') as f:
-                find_path = pickle.load(f)
-            with open('input/not_found_path_node.pickle', 'rb') as f:
-                not_found_path_node = pickle.load(f)
-            with open('input/illegal_stereo_path_node.pickle', 'rb') as f:
-                illegal_stereo_path_node = pickle.load(f)
+        if input('Read data from files?(y/n) ').lower() == 'y':
+            find_path = read_pickle('find_path')
+            not_found_path_node = read_pickle('not_found_path_node')
+            illegal_stereo_path_node = read_pickle('illegal_stereo_path_node')
         else:
             print('Start to gen path data...')
             find_path, not_found_path_node, illegal_stereo_path_node = gen_find_path(pn2_has_edge)
-            print('Start to save data...')
-            with open('input/find_path.pickle', 'wb') as f:
-                pickle.dump(find_path, f)
-            with open('input/not_found_path_node.pickle', 'wb') as f:
-                pickle.dump(not_found_path_node, f)
-            with open('input/illegal_stereo_path_node.pickle', 'wb') as f:
-                pickle.dump(illegal_stereo_path_node, f)
-            print('Finish !!')
+
+            dump_pickle('find_path', find_path)
+            dump_pickle('not_found_path_node', not_found_path_node)
+            dump_pickle('illegal_stereo_path_node', illegal_stereo_path_node)
+            print('Save data completely !!')
         
         print('------------------------------------------------------------')
         print('successful path number :', len(find_path))
@@ -3675,23 +3699,17 @@ if __name__ == '__main__':
         ################### pick path(greedy) ###################
 
         if input('Read greedy choose path from files?(y/n) ').lower() == 'y':
-            with open('input/greedy_choose_path.pickle', 'rb') as f:
-                greedy_choose_path = pickle.load(f)
-            with open('input/uncover_pairs.pickle', 'rb') as f:
-                uncover_pairs = pickle.load(f)
-            with open('input/pattern_combination_idx.pickle', 'rb') as f:
-                pattern_combination_idx = pickle.load(f)
+            greedy_choose_path = read_pickle('greedy_choose_path')
+            uncover_pairs = read_pickle('uncover_pairs')
+            pattern_combination_idx = read_pickle('pattern_combination_idx')
         else:
             print('Start to gen greedy path data...')
             greedy_choose_path, uncover_pairs, pattern_combination_idx = greedy_pick_path(find_path, pn2_has_edge)
-            print('Start to save data...')
-            with open('input/greedy_choose_path.pickle', 'wb') as f:
-                pickle.dump(greedy_choose_path, f)
-            with open('input/uncover_pairs.pickle', 'wb') as f:
-                pickle.dump(uncover_pairs, f)
-            with open('input/pattern_combination_idx.pickle', 'wb') as f:
-                pickle.dump(pattern_combination_idx, f)
-            print('Finish !!')
+
+            dump_pickle('greedy_choose_path', greedy_choose_path)
+            dump_pickle('uncover_pairs', uncover_pairs)
+            dump_pickle('pattern_combination_idx', pattern_combination_idx)
+            print('Save data completely !!')
         
         #print(greedy_choose_path)
         print('------------------------------------------------------------')
