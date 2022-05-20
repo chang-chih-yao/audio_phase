@@ -3212,10 +3212,8 @@ def greedy_pick_path(find_path, pn2_has_edge):
     DEF_MAX_VAULE = 99999999
     end_idx = DEF_MAX_VAULE
 
+    find_path_copy = find_path.copy()
     uncover_pairs = pn2_has_edge.copy()
-    path_idx = 0
-    tmp_s = ''
-    pattern_combination_idx = []
     
     start_time = time.time()
 
@@ -3223,13 +3221,13 @@ def greedy_pick_path(find_path, pn2_has_edge):
         if end_idx == DEF_MAX_VAULE:
             max_match_num = [0, 0, []]
             useless_path = []
-        print('now find_path :', len(find_path), 'now uncover_pairs :', len(uncover_pairs))
-        for i in range(len(find_path)):
+        print('remain path :', len(find_path_copy), ',   uncover pairs :', len(uncover_pairs))
+        for i in range(len(find_path_copy)):
             if i < start_idx or i > end_idx:      # start_idx >= i >= end_idx  not continue
                 continue
             delete_idx = []
             for edge_idx in range(len(uncover_pairs)):
-                mono_0_path = find_path[i][0]
+                mono_0_path = find_path_copy[i][0]
                 for mono_0_pre in range(len(mono_0_path)):
                     if uncover_pairs[edge_idx][0] == mono_0_path[mono_0_pre]:
                         for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
@@ -3237,7 +3235,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
                                 #print('mono_0 find edge :', edge_idx, uncover_pairs[edge_idx])
                                 delete_idx.append(edge_idx)
 
-                mono_1_path = find_path[i][1]
+                mono_1_path = find_path_copy[i][1]
                 for mono_1_pre in range(len(mono_1_path)):
                     if uncover_pairs[edge_idx][0] == mono_1_path[mono_1_pre]:
                         for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
@@ -3281,46 +3279,11 @@ def greedy_pick_path(find_path, pn2_has_edge):
         start_idx = max_match_num[1] - len(useless_path)
         end_idx = DEF_MAX_VAULE
 
-        greedy_choose_path.append(find_path[max_match_num[1]])
-        tmp_s += 'PATH_IDX ' + str(path_idx) + ' MAX_MATCH_NUM ' + str(max_match_num[0]) + '\n'
-        path_idx += 1
-
-        
-
-        debug_idx = []
-        for edge_idx in range(len(pn2_has_edge)):
-            mono_0_path = find_path[max_match_num[1]][0]
-            for mono_0_pre in range(len(mono_0_path)):
-                if pn2_has_edge[edge_idx][0] == mono_0_path[mono_0_pre]:
-                    for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                        if pn2_has_edge[edge_idx][1] == mono_0_path[mono_0_post]:
-                            #print('mono_0 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                            debug_idx.append(edge_idx)
-
-            mono_1_path = find_path[max_match_num[1]][1]
-            for mono_1_pre in range(len(mono_1_path)):
-                if pn2_has_edge[edge_idx][0] == mono_1_path[mono_1_pre]:
-                    for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                        if pn2_has_edge[edge_idx][1] == mono_1_path[mono_1_post]:
-                            #print('mono_1 find edge :', edge_idx, pn2_has_edge[edge_idx])
-                            debug_idx.append(edge_idx)
-        
-        pattern_combination_idx.append(debug_idx)
-
-        for item in debug_idx:
-            tmp_s += str(item) + ':' + str(pn2_has_edge[item]) + ', '
-
-        tmp_s += '\n' + 'array len ' + str(len(debug_idx)) + '\n'
-
-        
-
-
-
-
+        greedy_choose_path.append(find_path_copy[max_match_num[1]])
         useless_path.append(max_match_num[1])
         delete_tmp = sorted(useless_path, reverse=True)
         for item in delete_tmp:
-            del find_path[item]
+            del find_path_copy[item]
         delete_tmp = max_match_num[2][::-1]
         for item in delete_tmp:
             del uncover_pairs[item]
@@ -3333,10 +3296,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
     #print(uncover_pairs)
     #print(pn2_has_edge)
     
-
-    with open('check_log/audio_data_phase_path_log.txt', 'w') as f:
-        f.write(tmp_s)
-    return greedy_choose_path, uncover_pairs, pattern_combination_idx
+    return greedy_choose_path, uncover_pairs
 
 def read_pickle(file_name):
     file_dir = data_phase_array_data_dir + file_name + '.pickle'
@@ -3701,14 +3661,12 @@ if __name__ == '__main__':
         if input('Read greedy choose path from files?(y/n) ').lower() == 'y':
             greedy_choose_path = read_pickle('greedy_choose_path')
             uncover_pairs = read_pickle('uncover_pairs')
-            pattern_combination_idx = read_pickle('pattern_combination_idx')
         else:
             print('Start to gen greedy path data...')
-            greedy_choose_path, uncover_pairs, pattern_combination_idx = greedy_pick_path(find_path, pn2_has_edge)
+            greedy_choose_path, uncover_pairs = greedy_pick_path(find_path, pn2_has_edge)
 
             dump_pickle('greedy_choose_path', greedy_choose_path)
             dump_pickle('uncover_pairs', uncover_pairs)
-            dump_pickle('pattern_combination_idx', pattern_combination_idx)
             print('Save data completely !!')
         
         #print(greedy_choose_path)
@@ -3733,6 +3691,29 @@ if __name__ == '__main__':
                 pn2_has_edge_covered.append(pn2_has_edge[i])
 
         gen_coverage_data_phase(pn2_has_edge_covered)
+
+
+        pattern_combination_idx = []
+        for path_idx in range(len(greedy_choose_path)):
+            debug_idx = []
+            for edge_idx in range(len(pn2_has_edge_covered)):
+                mono_0_path = find_path[path_idx][0]
+                for mono_0_pre in range(len(mono_0_path)):
+                    if pn2_has_edge_covered[edge_idx][0] == mono_0_path[mono_0_pre]:
+                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                            if pn2_has_edge_covered[edge_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find edge :', edge_idx, pn2_has_edge_covered[edge_idx])
+                                debug_idx.append(edge_idx)
+
+                mono_1_path = find_path[path_idx][1]
+                for mono_1_pre in range(len(mono_1_path)):
+                    if pn2_has_edge_covered[edge_idx][0] == mono_1_path[mono_1_pre]:
+                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                            if pn2_has_edge_covered[edge_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find edge :', edge_idx, pn2_has_edge_covered[edge_idx])
+                                debug_idx.append(edge_idx)
+            
+            pattern_combination_idx.append(debug_idx)
 
         
         if not FOR_SD_CHECK_ONLY:
