@@ -3020,8 +3020,8 @@ def find_stereo_path(G, components_info, input_node_index, stereo_component_dict
             #exit()
 
     if success_flag:
-        stereo_input_name = stereo_component_dict[components_info[mono[-1]]['Outputs'][0]]   # find stereo input node name
-        if stereo_input_name != components_info[stereo_path[-1]]['Outputs'][0]:                                             # 若找到的另一條stereo_path的input node跟原本的input node沒有成對
+        stereo_input_name = stereo_component_dict[components_info[mono[-1]]['Outputs'][0]]           # find stereo input node name
+        if stereo_input_name != components_info[stereo_path[-1]]['Outputs'][0]:                      # 若找到的另一條stereo_path的input node跟原本的input node沒有成對
             success_flag = False
             print('input node diff,', stereo_input_name, components_info[stereo_path[-1]]['Outputs'][0])
             exit()
@@ -3132,6 +3132,7 @@ def gen_find_path(pn2_has_edge):
     for i in range(len(pn2_has_edge)):
         find_path_flag = False
         print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]), end='')
+        start_time = time.time()
         if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
             for output_node in output_node_index:
                 # if output_node <= 321:
@@ -3200,74 +3201,76 @@ def gen_find_path(pn2_has_edge):
             #exit()
         else:
             print('FIND_PATH')
+        if time.time() - start_time > 5:
+            print(time.time() - start_time)
     return find_path, not_found_path_node, illegal_stereo_path_node
 
 
 def greedy_pick_path(find_path, pn2_has_edge):
-    greedy_choose_path = []
-    max_match_num = [0, 0, []]       # [max_num, find_path idx, delete_idx array]
-    useless_path = []                # 存放 在find_path中 沒有用的path idx (len(delete_idx)==0)
+    greedy_choose_path = []          # 用greedy演算法選到的path
+    max_match_info = [0, 0, []]      # [max_num, find_path idx, covered_pairs_idx array]
+    useless_path = []                # 存放 在find_path中 沒有用的path idx (len(covered_pairs_idx)==0)
     last_max_num = -1                # 上一次找到的 max_num 值
     start_idx = 0                    # 從 start_idx 開始找 find_path for loop
-    DEF_MAX_VAULE = 99999999
+    DEF_MAX_VAULE = 99999999         # 
     end_idx = DEF_MAX_VAULE
 
-    find_path_copy = find_path.copy()
+    remain_path = find_path.copy()
     uncover_pairs = pn2_has_edge.copy()
     
     start_time = time.time()
 
     while(True):
         if end_idx == DEF_MAX_VAULE:
-            max_match_num = [0, 0, []]
+            max_match_info = [0, 0, []]
             useless_path = []
-        print('remain path :', len(find_path_copy), ',   uncover pairs :', len(uncover_pairs))
-        for i in range(len(find_path_copy)):
-            if i < start_idx or i > end_idx:      # start_idx >= i >= end_idx  not continue
+        print('remain path :', len(remain_path), ',   uncover pairs :', len(uncover_pairs))
+        for path_idx in range(len(remain_path)):
+            if path_idx < start_idx or path_idx > end_idx:      # start_idx >= path_idx >= end_idx  not continue
                 continue
-            delete_idx = []
-            for edge_idx in range(len(uncover_pairs)):
-                mono_0_path = find_path_copy[i][0]
+            covered_pairs_idx = []
+            for pair_idx in range(len(uncover_pairs)):
+                mono_0_path = remain_path[path_idx][0]
                 for mono_0_pre in range(len(mono_0_path)):
-                    if uncover_pairs[edge_idx][0] == mono_0_path[mono_0_pre]:
+                    if uncover_pairs[pair_idx][0] == mono_0_path[mono_0_pre]:
                         for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                            if uncover_pairs[edge_idx][1] == mono_0_path[mono_0_post]:
-                                #print('mono_0 find edge :', edge_idx, uncover_pairs[edge_idx])
-                                delete_idx.append(edge_idx)
+                            if uncover_pairs[pair_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find pair :', pair_idx, uncover_pairs[pair_idx])
+                                covered_pairs_idx.append(pair_idx)
 
-                mono_1_path = find_path_copy[i][1]
+                mono_1_path = remain_path[path_idx][1]
                 for mono_1_pre in range(len(mono_1_path)):
-                    if uncover_pairs[edge_idx][0] == mono_1_path[mono_1_pre]:
+                    if uncover_pairs[pair_idx][0] == mono_1_path[mono_1_pre]:
                         for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                            if uncover_pairs[edge_idx][1] == mono_1_path[mono_1_post]:
-                                #print('mono_1 find edge :', edge_idx, uncover_pairs[edge_idx])
-                                delete_idx.append(edge_idx)
+                            if uncover_pairs[pair_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find pair :', pair_idx, uncover_pairs[pair_idx])
+                                covered_pairs_idx.append(pair_idx)
             
-            if len(delete_idx) == 0:
-                useless_path.append(i)
+            if len(covered_pairs_idx) == 0:
+                useless_path.append(path_idx)
 
-            if max_match_num[0] < len(delete_idx):
-                max_match_num[0] = len(delete_idx)
-                max_match_num[1] = i
-                max_match_num[2] = delete_idx
-                if last_max_num == max_match_num[0]:    # 如果目前找到的 max_num 是上一次找到的 max_num(last_max_num) 就可以不用繼續找了
+            if max_match_info[0] < len(covered_pairs_idx):      # 如果當下找到的path能cover更多pn2組合
+                max_match_info[0] = len(covered_pairs_idx)
+                max_match_info[1] = path_idx
+                max_match_info[2] = covered_pairs_idx
+                if last_max_num == max_match_info[0]:    # 如果目前找到的 max_num 是上一次找到的 max_num(last_max_num) 就可以不用繼續找了
                     break
-            elif end_idx != DEF_MAX_VAULE and max_match_num[0] == len(delete_idx) and max_match_num[1] > i:
-                max_match_num[0] = len(delete_idx)
-                max_match_num[1] = i
-                max_match_num[2] = delete_idx
+            elif end_idx != DEF_MAX_VAULE and max_match_info[0] == len(covered_pairs_idx) and max_match_info[1] > path_idx:
+                max_match_info[0] = len(covered_pairs_idx)
+                max_match_info[1] = path_idx
+                max_match_info[2] = covered_pairs_idx
 
-            # print(delete_idx)
-            # print(len(delete_idx))
+            # print(covered_pairs_idx)
+            # print(len(covered_pairs_idx))
         
-        if max_match_num[0] == 0:       # can't be found uncover_pairs anymore
+        if max_match_info[0] == 0:       # can't be found uncover_pairs anymore
             if start_idx != 0:
                 start_idx = 0
                 continue
             else:
                 break
         
-        if last_max_num != max_match_num[0] and start_idx != 0:
+        if last_max_num != max_match_info[0] and start_idx != 0:
             end_idx = start_idx
             start_idx = 0
             continue
@@ -3275,16 +3278,16 @@ def greedy_pick_path(find_path, pn2_has_edge):
         
         
 
-        last_max_num = max_match_num[0]                 # update last_max_num value
-        start_idx = max_match_num[1] - len(useless_path)
+        last_max_num = max_match_info[0]                 # update last_max_num value
+        start_idx = max_match_info[1] - len(useless_path)
         end_idx = DEF_MAX_VAULE
 
-        greedy_choose_path.append(find_path_copy[max_match_num[1]])
-        useless_path.append(max_match_num[1])
+        greedy_choose_path.append(remain_path[max_match_info[1]])
+        useless_path.append(max_match_info[1])
         delete_tmp = sorted(useless_path, reverse=True)
         for item in delete_tmp:
-            del find_path_copy[item]
-        delete_tmp = max_match_num[2][::-1]
+            del remain_path[item]
+        delete_tmp = max_match_info[2][::-1]
         for item in delete_tmp:
             del uncover_pairs[item]
         
@@ -3695,25 +3698,25 @@ if __name__ == '__main__':
 
         pattern_combination_idx = []
         for path_idx in range(len(greedy_choose_path)):
-            debug_idx = []
-            for edge_idx in range(len(pn2_has_edge_covered)):
+            pn2_idx = []
+            for pair_idx in range(len(pn2_has_edge_covered)):
                 mono_0_path = find_path[path_idx][0]
                 for mono_0_pre in range(len(mono_0_path)):
-                    if pn2_has_edge_covered[edge_idx][0] == mono_0_path[mono_0_pre]:
+                    if pn2_has_edge_covered[pair_idx][0] == mono_0_path[mono_0_pre]:
                         for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                            if pn2_has_edge_covered[edge_idx][1] == mono_0_path[mono_0_post]:
-                                #print('mono_0 find edge :', edge_idx, pn2_has_edge_covered[edge_idx])
-                                debug_idx.append(edge_idx)
+                            if pn2_has_edge_covered[pair_idx][1] == mono_0_path[mono_0_post]:
+                                #print('mono_0 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
+                                pn2_idx.append(pair_idx)
 
                 mono_1_path = find_path[path_idx][1]
                 for mono_1_pre in range(len(mono_1_path)):
-                    if pn2_has_edge_covered[edge_idx][0] == mono_1_path[mono_1_pre]:
+                    if pn2_has_edge_covered[pair_idx][0] == mono_1_path[mono_1_pre]:
                         for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                            if pn2_has_edge_covered[edge_idx][1] == mono_1_path[mono_1_post]:
-                                #print('mono_1 find edge :', edge_idx, pn2_has_edge_covered[edge_idx])
-                                debug_idx.append(edge_idx)
+                            if pn2_has_edge_covered[pair_idx][1] == mono_1_path[mono_1_post]:
+                                #print('mono_1 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
+                                pn2_idx.append(pair_idx)
             
-            pattern_combination_idx.append(debug_idx)
+            pattern_combination_idx.append(pn2_idx)
 
         
         if not FOR_SD_CHECK_ONLY:
