@@ -3063,7 +3063,7 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
         path_list = [PATH_A, PATH_B, PATH_C]
         per_list = permutations(path_list)
     
-    mix = []
+    mix = []                  # 排列組合後 組合而成的path
     success_flag = False
 
     per = permutations(range(2))
@@ -3500,23 +3500,6 @@ if __name__ == '__main__':
 
         #print(G.nodes)
 
-        # print('--------------------------------------')
-        # print(nx.dfs_successors(G, source=180))
-        # print('--------------------------------------')
-        # print(nx.dfs_successors(G, source=22))
-        # print('--------------------------------------')
-        # print(nx.dfs_successors(G, source=110))
-        # print(nx.has_path(G, 196, 0))
-        # print(nx.has_path(G, 0, 196))
-        # print(nx.has_path(G, 18, 0))
-        # print(nx.has_path(G, 0, 18))
-        # print(nx.shortest_path(G, 196, 0))
-        # for item in nx.all_simple_paths(G, 0, 196):
-        #     print(item)
-        # print(list(nx.all_simple_paths(G, 0, 196)))
-        #print(nx.dfs_successors(G, source=196))
-        #exit()
-
         phase_node = []
         for i in range(len(components_info)):
             if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'SRC' or components_info[i]['Type'] == 'Input_Node':
@@ -3664,61 +3647,65 @@ if __name__ == '__main__':
         if input('Read greedy choose path from files?(y/n) ').lower() == 'y':
             greedy_choose_path = read_pickle('greedy_choose_path')
             uncover_pairs = read_pickle('uncover_pairs')
+            pn2_has_edge_covered = read_pickle('pn2_has_edge_covered')
+            pattern_combination_idx = read_pickle('pattern_combination_idx')
         else:
             print('Start to gen greedy path data...')
             greedy_choose_path, uncover_pairs = greedy_pick_path(find_path, pn2_has_edge)
 
+
+            pn2_has_edge_covered = []
+            for i in range(len(pn2_has_edge)):
+                flag = 0
+                for item in uncover_pairs:
+                    if pn2_has_edge[i] == item:
+                        flag = 1
+                        break
+                if flag == 0:
+                    pn2_has_edge_covered.append(pn2_has_edge[i])
+
+            
+            pattern_combination_idx = []
+            for path_idx in range(len(greedy_choose_path)):
+                pn2_idx = []
+                for pair_idx in range(len(pn2_has_edge_covered)):
+                    mono_0_path = find_path[path_idx][0]
+                    for mono_0_pre in range(len(mono_0_path)):
+                        if pn2_has_edge_covered[pair_idx][0] == mono_0_path[mono_0_pre]:
+                            for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
+                                if pn2_has_edge_covered[pair_idx][1] == mono_0_path[mono_0_post]:
+                                    #print('mono_0 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
+                                    pn2_idx.append(pair_idx)
+
+                    mono_1_path = find_path[path_idx][1]
+                    for mono_1_pre in range(len(mono_1_path)):
+                        if pn2_has_edge_covered[pair_idx][0] == mono_1_path[mono_1_pre]:
+                            for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
+                                if pn2_has_edge_covered[pair_idx][1] == mono_1_path[mono_1_post]:
+                                    #print('mono_1 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
+                                    pn2_idx.append(pair_idx)
+                
+                pattern_combination_idx.append(pn2_idx)
+
+
             dump_pickle('greedy_choose_path', greedy_choose_path)
             dump_pickle('uncover_pairs', uncover_pairs)
+            dump_pickle('pn2_has_edge_covered', pn2_has_edge_covered)
+            dump_pickle('pattern_combination_idx', pattern_combination_idx)
             print('Save data completely !!')
         
         #print(greedy_choose_path)
         print('------------------------------------------------------------')
         print('pattern num :', len(greedy_choose_path))
+        print('pn2_has_edge_covered :', len(pn2_has_edge_covered))
         print('--------------------- uncovered pairs ----------------------')
         print(uncover_pairs)
         print('uncovered pairs num :', len(uncover_pairs))
 
 
-        pn2_has_edge_covered = []
-        # for i in range(len(pn2_has_edge)):
-        #     print(i, pn2_has_edge[i])
-        # print()
-        for i in range(len(pn2_has_edge)):
-            flag = 0
-            for item in uncover_pairs:
-                if pn2_has_edge[i] == item:
-                    flag = 1
-                    break
-            if flag == 0:
-                pn2_has_edge_covered.append(pn2_has_edge[i])
-
         gen_coverage_data_phase(pn2_has_edge_covered)
 
 
-        pattern_combination_idx = []
-        for path_idx in range(len(greedy_choose_path)):
-            pn2_idx = []
-            for pair_idx in range(len(pn2_has_edge_covered)):
-                mono_0_path = find_path[path_idx][0]
-                for mono_0_pre in range(len(mono_0_path)):
-                    if pn2_has_edge_covered[pair_idx][0] == mono_0_path[mono_0_pre]:
-                        for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
-                            if pn2_has_edge_covered[pair_idx][1] == mono_0_path[mono_0_post]:
-                                #print('mono_0 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
-                                pn2_idx.append(pair_idx)
-
-                mono_1_path = find_path[path_idx][1]
-                for mono_1_pre in range(len(mono_1_path)):
-                    if pn2_has_edge_covered[pair_idx][0] == mono_1_path[mono_1_pre]:
-                        for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
-                            if pn2_has_edge_covered[pair_idx][1] == mono_1_path[mono_1_post]:
-                                #print('mono_1 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
-                                pn2_idx.append(pair_idx)
-            
-            pattern_combination_idx.append(pn2_idx)
-
-        
         if not FOR_SD_CHECK_ONLY:
             if all_register_info:
                 control = input("Auto gen reg_info.xlsx? Press Y(yes) or N(no): ")
