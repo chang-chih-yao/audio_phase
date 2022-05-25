@@ -3703,6 +3703,17 @@ if __name__ == '__main__':
         print('uncovered pairs num :', len(uncover_pairs))
 
 
+        ####################### dump data phase pattern log #######################
+        path_log_str = ''
+        for path_idx in range(len(greedy_choose_path)):
+            path_log_str += 'PATH: ' + str(path_idx) + '  combination len: ' + str(len(pattern_combination_idx[path_idx])) + '\n'
+            for i in range(len(pattern_combination_idx[path_idx])):
+                c_idx = pattern_combination_idx[path_idx][i]
+                path_log_str += 'C_' + str(pn2_has_edge_covered[c_idx][0]) + '_' + str(pn2_has_edge_covered[c_idx][1]) + ' : ' + str(c_idx) + '\n'
+        with open('check_log/phase_log.txt', 'w') as f:
+            f.write(path_log_str)
+
+
         gen_coverage_data_phase(pn2_has_edge_covered)
 
 
