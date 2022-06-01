@@ -15,8 +15,10 @@ for cov in coverage:
         cov_list_int = list(cov_list_map)
         cov_arr.append(cov_list_int)
 #print(cov_arr, len(cov_arr))
+print('coverage bins num:', len(cov_arr))
 cov_check = [0]*len(cov_arr)
 
+check_pass = True
 
 if(os.path.isdir(input_dir)):
     for dirPath, dirNames, fileNames in os.walk(input_dir):
@@ -77,4 +79,10 @@ if(os.path.isdir(input_dir)):
 #print(cov_check)
 for i in range(len(cov_check)):
     if cov_check[i] == 0:
-        print(i)
+        print('uncovered bins idx:', i)
+        check_pass = False
+
+if check_pass:
+    print('PASS')
+else:
+    print('FAIL')
