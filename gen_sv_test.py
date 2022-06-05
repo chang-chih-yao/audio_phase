@@ -7,21 +7,22 @@ import os
 from colorama import Fore, Style
 import shutil
 import multiprocessing as mp
-from itertools import permutations
+from itertools import permutations, combinations
 import numpy as np
 import time
 import pickle
 import json
+from difflib import SequenceMatcher
 
 ########################## global settings ##########################
-SIGNATURE = '/*********** Auto Gen Tools ***********/\n'
+SIGNATURE = '/*********** Data Phase Auto Gen Tools ***********/\n'
 COMPONENT_NAME_COLUMN_NAME = '主圖形名稱'
 BACKUP_DIR  = 'backup'
 INPUT_DIR   = 'input'
 ENV_DIR     = 'env'
 CONTENT_DIR = 'env_content'
 DATA_DIR    = 'data'
-PATTERN_DIR = 'audio_data_path_auto_gen_patterns'
+PATTERN_DIR = 'audio_data_phase_auto_gen_patterns'
 CHECK_LOG_DIR = 'check_log'
 REPORT_DIR  = 'report'
 NULL_NODE_ID = -1
@@ -34,6 +35,7 @@ REG_READ_WRITE_VARIABLE_NAME = 'data_tmp'
 RESERVED_SELECT_SIGNAL = SELECT_SIGNAL_RESERVED
 OFFSET_SELECT_SIGNAL   = '_offset_'
 FOR_SD_CHECK_ONLY = False
+cust_audio_data_phase_coverage_model_changed = False
 
 ########################## global settings ##########################
 
@@ -662,108 +664,139 @@ def output_components_info(components_info, output_file_name = 'components_info.
         
     write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
 
-def gen_stereo_componenet_dict():
-    stereo_component_dict = dict()
-    # output node
-    stereo_component_dict['if1_out_0'] = 'if1_out_1'
-    stereo_component_dict['if1_out_1'] = 'if1_out_0'
-    stereo_component_dict['if1_out_2'] = 'if1_out_3'
-    stereo_component_dict['if1_out_3'] = 'if1_out_2'
-    stereo_component_dict['if1_out_4'] = 'if1_out_5'
-    stereo_component_dict['if1_out_5'] = 'if1_out_4'
-    stereo_component_dict['if1_out_6'] = 'if1_out_7'
-    stereo_component_dict['if1_out_7'] = 'if1_out_6'
-    stereo_component_dict['if2_out_0'] = 'if2_out_1'
-    stereo_component_dict['if2_out_1'] = 'if2_out_0'
-    stereo_component_dict['if2_out_2'] = 'if2_out_3'
-    stereo_component_dict['if2_out_3'] = 'if2_out_2'
-    stereo_component_dict['if2_out_4'] = 'if2_out_5'
-    stereo_component_dict['if2_out_5'] = 'if2_out_4'
-    stereo_component_dict['if2_out_6'] = 'if2_out_7'
-    stereo_component_dict['if2_out_7'] = 'if2_out_6'
-    stereo_component_dict['if3_out_0'] = 'if3_out_1'
-    stereo_component_dict['if3_out_1'] = 'if3_out_0'
-    stereo_component_dict['if3_out_2'] = 'if3_out_3'
-    stereo_component_dict['if3_out_3'] = 'if3_out_2'
-    stereo_component_dict['if3_out_4'] = 'if3_out_5'
-    stereo_component_dict['if3_out_5'] = 'if3_out_4'
-    stereo_component_dict['if3_out_6'] = 'if3_out_7'
-    stereo_component_dict['if3_out_7'] = 'if3_out_6'
-    stereo_component_dict['if4_out_r'] = 'if4_out_l'
-    stereo_component_dict['if4_out_l'] = 'if4_out_r'
-    stereo_component_dict['pdm1_dato_ri'] = 'pdm1_dato_fa'
-    stereo_component_dict['pdm1_dato_fa'] = 'pdm1_dato_ri'
-    stereo_component_dict['pdm2_dato_ri'] = 'pdm2_dato_fa'
-    stereo_component_dict['pdm2_dato_fa'] = 'pdm2_dato_ri'
-    stereo_component_dict['dp6_fifo_in0'] = 'dp6_fifo_in1'
-    stereo_component_dict['dp6_fifo_in1'] = 'dp6_fifo_in0'
-    stereo_component_dict['dp6_fifo_in2'] = 'dp6_fifo_in3'
-    stereo_component_dict['dp6_fifo_in3'] = 'dp6_fifo_in2'
-    stereo_component_dict['dp6_fifo_in4'] = 'dp6_fifo_in5'
-    stereo_component_dict['dp6_fifo_in5'] = 'dp6_fifo_in4'
-    stereo_component_dict['dp6_fifo_in6'] = 'dp6_fifo_in7'
-    stereo_component_dict['dp6_fifo_in7'] = 'dp6_fifo_in6'
-    stereo_component_dict['dp4_fifo_in0'] = 'dp4_fifo_in1'
-    stereo_component_dict['dp4_fifo_in1'] = 'dp4_fifo_in0'
-    stereo_component_dict['dp4_fifo_in2'] = 'dp4_fifo_in3'
-    stereo_component_dict['dp4_fifo_in3'] = 'dp4_fifo_in2'
-    stereo_component_dict['dp2_fifo_in0'] = 'dp2_fifo_in1'
-    stereo_component_dict['dp2_fifo_in1'] = 'dp2_fifo_in0'
-    stereo_component_dict['dp10_fifo_in0'] = 'dp10_fifo_in1'
-    stereo_component_dict['dp10_fifo_in1'] = 'dp10_fifo_in0'
-    stereo_component_dict['dp08_fifo_in0'] = 'dp08_fifo_in1'
-    stereo_component_dict['dp08_fifo_in1'] = 'dp08_fifo_in0'
-    stereo_component_dict['dp12_fifo_in0'] = 'dp12_fifo_in1'
-    stereo_component_dict['dp12_fifo_in1'] = 'dp12_fifo_in0'
+def gen_input_output_stereo_dict():
+    input_output_stereo_dict = dict()
 
-    # input node
-    stereo_component_dict['i2s1_in_ch0'] = 'i2s1_in_ch1'
-    stereo_component_dict['i2s1_in_ch1'] = 'i2s1_in_ch0'
-    stereo_component_dict['i2s1_in_ch2'] = 'i2s1_in_ch3'
-    stereo_component_dict['i2s1_in_ch3'] = 'i2s1_in_ch2'
-    stereo_component_dict['i2s1_in_ch4'] = 'i2s1_in_ch5'
-    stereo_component_dict['i2s1_in_ch5'] = 'i2s1_in_ch4'
-    stereo_component_dict['i2s1_in_ch6'] = 'i2s1_in_ch7'
-    stereo_component_dict['i2s1_in_ch7'] = 'i2s1_in_ch6'
-    stereo_component_dict['i2s2_in_ch0'] = 'i2s2_in_ch1'
-    stereo_component_dict['i2s2_in_ch1'] = 'i2s2_in_ch0'
-    stereo_component_dict['i2s2_in_ch2'] = 'i2s2_in_ch3'
-    stereo_component_dict['i2s2_in_ch3'] = 'i2s2_in_ch2'
-    stereo_component_dict['i2s3_in_ch0'] = 'i2s3_in_ch1'
-    stereo_component_dict['i2s3_in_ch1'] = 'i2s3_in_ch0'
-    stereo_component_dict['i2s4_in_ch0'] = 'i2s4_in_ch1'
-    stereo_component_dict['i2s4_in_ch1'] = 'i2s4_in_ch0'
-    stereo_component_dict['sdw_dp_1_ch0'] = 'sdw_dp_1_ch1'
-    stereo_component_dict['sdw_dp_1_ch1'] = 'sdw_dp_1_ch0'
-    stereo_component_dict['sdw_dp_1_ch2'] = 'sdw_dp_1_ch3'
-    stereo_component_dict['sdw_dp_1_ch3'] = 'sdw_dp_1_ch2'
-    stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_ri'
-    stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_fa'
-    stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_ri'
-    stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_fa'
-    stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_ri'
-    stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_fa'
-    stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_ri'
-    stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_fa'
-    stereo_component_dict['sdm_09_l'] = 'sdm_09_l'
-    stereo_component_dict['sdm_09_r'] = 'sdm_09_r'
-    stereo_component_dict['sdm_08_l'] = 'sdm_08_l'
-    stereo_component_dict['sdm_08_r'] = 'sdm_08_r'
-    # stereo_component_dict['dmic12_dati_ri'] = 'dmic12_dati_fa'
-    # stereo_component_dict['dmic12_dati_fa'] = 'dmic12_dati_ri'
-    # stereo_component_dict['dmic34_dati_ri'] = 'dmic34_dati_fa'
-    # stereo_component_dict['dmic34_dati_fa'] = 'dmic34_dati_ri'
-    # stereo_component_dict['dmic56_dati_ri'] = 'dmic56_dati_fa'
-    # stereo_component_dict['dmic56_dati_fa'] = 'dmic56_dati_ri'
-    # stereo_component_dict['dmic78_dati_ri'] = 'dmic78_dati_fa'
-    # stereo_component_dict['dmic78_dati_fa'] = 'dmic78_dati_ri'
-    # stereo_component_dict['sdm_09_l'] = 'sdm_09_r'
-    # stereo_component_dict['sdm_09_r'] = 'sdm_09_l'
-    # stereo_component_dict['sdm_08_l'] = 'sdm_08_r'
-    # stereo_component_dict['sdm_08_r'] = 'sdm_08_l'
+    with open('input/stereo_table.txt', 'r') as f:
+        lines = f.readlines()
+
+    for line in lines:
+        input_output_stereo_dict[line.split(' ')[1]] = line.split(' ')[2].replace('\n', '')
+    # print(input_output_stereo_dict)
+    # print(len(input_output_stereo_dict))
     
+    return input_output_stereo_dict
+
+def gen_mux_stereo_dict(components_info):
+    mux_sel_signal_arr = []
+    for i in range(len(components_info)):
+        if components_info[i]['Type'].find('MUX') != -1:
+            #print(components_info[i]['Type'], components_info[i]['Outputs'], components_info[i]['Selects'], components_info[i]['Inputs'], components_info[i]['select'])
+            #print(components_info[i]['Selects'][0])
+            mux_sel_signal_arr.append(components_info[i]['Selects'][0])
+
+    print('total mux select signal num:', len(mux_sel_signal_arr))
+    print('non repeat mux select signal num:', len(set(mux_sel_signal_arr)))
+
+    seen_ = set()
+    dupes = set()
+    for x in mux_sel_signal_arr:
+        if x in seen_:
+            dupes.add(x)
+        else:
+            seen_.add(x)
+
+    uniq = list(set(mux_sel_signal_arr) - dupes)
+    dupes = list(dupes)
     
-    return stereo_component_dict
+    print('----------------------------------------------------')
+    print('duplicated:', len(dupes))
+    print(dupes)
+    print('----------------------------------------------------')
+    print('uniq:', len(uniq))
+    print(uniq)
+
+    print('----------------------------------------------------')
+
+    if len(dupes) + len(uniq) != len(set(mux_sel_signal_arr)):
+        print('select signal count error!!!!!!!!!!!!')
+        exit()
+
+    if len(dupes)*2 + len(uniq) == len(mux_sel_signal_arr):
+        print('PASS! Each duplicated signal has two')
+    else:
+        print('Warning! Some duplicated signals number is not two')
+        
+        # for i in range(len(dupes)):
+        #     cou = 0
+        #     for j in range(len(mux_sel_signal_arr)):
+        #         if dupes[i] == mux_sel_signal_arr[j]:
+        #             cou += 1
+        #     print(dupes[i], cou)
+        
+        # print('----------------------------------------------------')
+
+        # for i in range(len(uniq)):
+        #     cou = 0
+        #     for j in range(len(mux_sel_signal_arr)):
+        #         if uniq[i] == mux_sel_signal_arr[j]:
+        #             cou += 1
+        #     print(uniq[i], cou)
+        # exit()
+
+    mux_uniq_stereo_dict = dict()
+    mux_duplicate_stereo_dict = dict()
+    mux_non_pair_stereo_dict = dict()
+    find_pairs_names = []
+
+    for item in combinations(uniq, 2):
+        len_0 = len(item[0])
+        len_1 = len(item[1])
+        if len_0 == len_1:
+            S = SequenceMatcher(None, item[0], item[1])
+            r = S.ratio()
+            if len_0 - (r*(len_0*2)/2) <= 1.0:
+                #print(item)
+                #print(len_0 - (r*(len_0*2)/2))
+                diff_idx = S.get_matching_blocks()[0][2]
+                #print(diff_idx)
+                if item[0][diff_idx] == 'l':
+                    if item[1][diff_idx] == 'r':
+                        #print('!!!!!!')
+                        mux_uniq_stereo_dict[item[0]] = item[1]
+                        mux_uniq_stereo_dict[item[1]] = item[0]
+                        find_pairs_names.append(item[0])
+                        find_pairs_names.append(item[1])
+                        
+                if item[0][diff_idx] == 'r':
+                    if item[1][diff_idx] == 'l':
+                        #print('!!!!!!')
+                        mux_uniq_stereo_dict[item[0]] = item[1]
+                        mux_uniq_stereo_dict[item[1]] = item[0]
+                        find_pairs_names.append(item[0])
+                        find_pairs_names.append(item[1])
+    
+    #print(len(mux_uniq_stereo_dict), mux_uniq_stereo_dict)
+
+    print('----------------------------------------------------')
+    non_pair_uniq = list(set(uniq) - set(find_pairs_names))
+    print('沒有成對的 uniq :', non_pair_uniq)
+
+    for item in dupes:
+        mux_duplicate_stereo_dict[item] = item
+
+    for item in non_pair_uniq:
+        mux_non_pair_stereo_dict[item] = item
+
+    print('----------------------------------------------------')
+    print('total mux stereo dict num:', len(mux_uniq_stereo_dict)+len(mux_duplicate_stereo_dict)+len(mux_non_pair_stereo_dict))
+    print('----------------------------------------------------')
+    print('uniq dict')
+    print(mux_uniq_stereo_dict)
+    print('----------------------------------------------------')
+    print('duplicate dict')
+    print(mux_duplicate_stereo_dict)
+    print('----------------------------------------------------')
+    print('non pair dict')
+    print(mux_non_pair_stereo_dict)
+
+    print('----------------------------------------------------')
+    if len(mux_uniq_stereo_dict)+len(mux_duplicate_stereo_dict)+len(mux_non_pair_stereo_dict) != len(set(mux_sel_signal_arr)):
+        print('some select signals didnt find stereo pairs')
+    else:
+        print('DONE')
+
+    return mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict
 
 def only_direct_edge(G, node_0, node_1):
     if  (node_0, node_1) in G.edges and (node_1, node_0) not in G.edges:
@@ -771,69 +804,92 @@ def only_direct_edge(G, node_0, node_1):
     else:
         return False
 
-def find_stereo_path(G, components_info, input_node_index, stereo_component_dict, mono):
-    # give one path(mono) -> find another stereo path(stereo_path)
-    stereo_path = []
-    path_len = 0           # stereo_path now path length
+def find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict, mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict, path_0):
+    # give one path(path_0) -> find another stereo path(path_1)
+    path_1 = []                # target
+    path_1_len = 0             # path_1 now path length
     success_flag = True
-    stereo_output_name = stereo_component_dict[components_info[mono[0]]['Inputs'][0]]   # find stereo output node name
+    path_1_output_name = input_output_stereo_dict[components_info[path_0[0]]['Inputs'][0]]   # find path_1 output node name
     for i in range(len(components_info)):
-        if components_info[i]['Inputs'] == [stereo_output_name]:
-            stereo_path.append(i)                                                       # append stereo output node index
-            path_len += 1
+        if components_info[i]['Inputs'] == [path_1_output_name]:
+            path_1.append(i)                                                                 # append path_1 output node index
+            path_1_len += 1
             break
 
-    while(path_len != len(mono)):
+    while(path_1_len != len(path_0)):
         try:
-            #print(stereo_path)
-            if components_info[stereo_path[-1]]['Type'].find('MUX') != -1:
-                mono_component_selects = components_info[mono[path_len-1]]['Selects'][0]
-                next_component_selects = components_info[stereo_path[-1]]['Selects'][0]
-                if mono_component_selects != next_component_selects:     # 
-                    # print(mono_component_selects, next_component_selects)
-                    # print('MUX sel diff !')
-                    next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
-                    next_node_index = components_info[stereo_path[-1]]['select'][next_sel_index]
-                    if next_node_index in input_node_index:            # if this node is end of path -> break while loop
-                        stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
+            #print(path_1)
+            path_0_next_sel_idx = components_info[path_0[path_1_len-1]]['select'].index(path_0[path_1_len])
+            path_1_next_sel_id  = components_info[path_1[path_1_len-1]]['select'][path_0_next_sel_idx]
+            if path_1_next_sel_id == -1:
+                success_flag = False
+                break
+            
+            if components_info[path_1[path_1_len-1]]['Type'].find('MUX') != -1:
+                path_0_sel_signal = components_info[path_0[path_1_len-1]]['Selects'][0]
+                path_1_sel_signal = components_info[path_1[path_1_len-1]]['Selects'][0]
+
+                if path_0_sel_signal in mux_uniq_stereo_dict:
+                    if mux_uniq_stereo_dict[path_0_sel_signal] != path_1_sel_signal:
+                        success_flag = False
+                        break
+
+                    if path_0_next_sel_idx%2 == 0:
+                        path_0_next_sel_idx += 1
+                    else:
+                        path_0_next_sel_idx -= 1
+                    
+                    path_1_next_sel_id  = components_info[path_1[path_1_len-1]]['select'][path_0_next_sel_idx]
+                    if path_1_next_sel_id == -1:
+                        success_flag = False
+                        break
+                    
+                elif path_0_sel_signal in mux_duplicate_stereo_dict:
+                    if mux_duplicate_stereo_dict[path_0_sel_signal] != path_1_sel_signal:
+                        success_flag = False
+                        break
+                elif path_0_sel_signal in mux_non_pair_stereo_dict:
+                    if mux_non_pair_stereo_dict[path_0_sel_signal] != path_1_sel_signal:
+                        success_flag = False
+                        break
+                '''
+                if path_0_sel_signal != path_1_sel_signal:              # path_0 and path_1 MUX select signal are different now
+                    if path_1_next_sel_id in input_node_id:                    # if next sel node is input node(end of path) -> break while loop
+                        path_1.append(path_1_next_sel_id)
                         break
                     else:
                         #print('illegal :  MUX sel diff !!!!!!!!!!!!!!')
                         success_flag = False
                         break
-            next_sel_index = components_info[mono[path_len-1]]['select'].index(mono[path_len])
-            # mono_component_name = components_info[mono[path_len-1]]['Inputs'][next_sel_index]
-            # next_component_name = components_info[stereo_path[-1]]['Inputs'][next_sel_index]
-            stereo_path.append(components_info[stereo_path[-1]]['select'][next_sel_index])
-            path_len += 1
+                '''
+
+            path_1.append(path_1_next_sel_id)
+            path_1_len += 1
         except:
             success_flag = False
-            #print('find stereo path ERROR')
+            #print('idx error')
             break
 
-    # if success_flag == False:
-    #     print(stereo_path)
-    #     exit()
 
     # 檢查兩個stereo paths的所有node是否都是不相同的
     if success_flag:
-        if len(set(mono+stereo_path)) != len(mono+stereo_path):
-            for item in (set(mono) & set(stereo_path)):       # set(mono) & set(stereo_path) -> mono跟stereo_path重複的點的集合
-                if item not in input_node_index:
+        if len(set(path_0+path_1)) != len(path_0+path_1):
+            for item in (set(path_0) & set(path_1)):       # set(path_0) & set(path_1) -> path_0 跟 path_1 重複的點的集合
+                if item not in input_node_id:
                     #print('Stereo path found repeated node not in input_node list !!!!')
                     success_flag = False
-                    #exit()
-            #exit()
 
     if success_flag:
-        stereo_input_name = stereo_component_dict[components_info[mono[-1]]['Outputs'][0]]           # find stereo input node name
-        if stereo_input_name != components_info[stereo_path[-1]]['Outputs'][0]:                      # 若找到的另一條stereo_path的input node跟原本的input node沒有成對
+        path_1_expect_input_node_name = input_output_stereo_dict[components_info[path_0[-1]]['Outputs'][0]]          # find path_1 input node name
+        if path_1_expect_input_node_name != components_info[path_1[-1]]['Outputs'][0]:                               # 若找到的另一條stereo_path的input node跟原本的input node沒有成對
             success_flag = False
-            print('input node diff,', stereo_input_name, components_info[stereo_path[-1]]['Outputs'][0])
+            print('input node diff,', path_1_expect_input_node_name, components_info[path_1[-1]]['Outputs'][0])
+            print(path_0)
+            print(path_1)
             exit()
 
-    #print(stereo_path)
-    return success_flag, stereo_path
+    #print(path_1)
+    return success_flag, path_1
 
 def check_per_path(G, node_0, node_1, node_2, node_3=None):
     success_flag = True
@@ -939,7 +995,7 @@ def gen_find_path(pn2_has_edge):
         print('{:>4d}->{:<4d}: '.format(pn2_has_edge[i][0], pn2_has_edge[i][1]), end='')
         start_time = time.time()
         if components_info[pn2_has_edge[i][1]]['Type'] == 'Input_Node':
-            for output_node in output_node_index:
+            for output_node in output_node_id:
                 # if output_node <= 321:
                 #     continue
                 if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1]):
@@ -954,7 +1010,7 @@ def gen_find_path(pn2_has_edge):
                         if find_path_flag == False:
                             continue
 
-                    find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                    find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict, mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict, tmp_mix)
                     if find_path_flag == False:
                         if [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
                             illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
@@ -967,10 +1023,10 @@ def gen_find_path(pn2_has_edge):
                     find_path_flag = True
                     break
         else:
-            for output_node in output_node_index:
+            for output_node in output_node_id:
                 # if output_node <= 321:
                 #     continue
-                for input_node in input_node_index:
+                for input_node in input_node_id:
                     #print('Try ', output_node, input_node)
                     if check_per_path(G, output_node, pn2_has_edge[i][0], pn2_has_edge[i][1], input_node):
                         tmp_a = nx.shortest_path(G, output_node, pn2_has_edge[i][0])
@@ -985,7 +1041,7 @@ def gen_find_path(pn2_has_edge):
                             if find_path_flag == False:
                                 continue
                         
-                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                        find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict, mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict, tmp_mix)
                         if find_path_flag == False:
                             if [pn2_has_edge[i][0], pn2_has_edge[i][1]] not in illegal_stereo_path_node:
                                 illegal_stereo_path_node.append([pn2_has_edge[i][0], pn2_has_edge[i][1]])
@@ -1006,8 +1062,10 @@ def gen_find_path(pn2_has_edge):
             #exit()
         else:
             print('FIND_PATH')
-        if time.time() - start_time > 5:
-            print(time.time() - start_time)
+        
+        # if time.time() - start_time > 5:
+        #     print(time.time() - start_time)
+
     return find_path, not_found_path_node, illegal_stereo_path_node
 
 def greedy_pick_path(find_path, pn2_has_edge):
@@ -1117,6 +1175,7 @@ def read_pickle(file_name):
 
 def dump_pickle(file_name, data):
     file_dir = data_phase_array_data_dir + file_name + '.pickle'
+    c = 'y'
     if os.path.exists(file_dir):
         with open(file_dir, 'rb') as f:
             old_data = pickle.load(f)
@@ -1124,20 +1183,103 @@ def dump_pickle(file_name, data):
             print(file_name + ' data changed...  backup old data!')
             src = file_dir
             des = data_phase_array_data_dir + 'backup/' + file_name + '.pickle'
-            shutil.copy(src, des)
-    with open(file_dir, 'wb') as f:
-        pickle.dump(data, f)
+            c = input('dump?')
+            if c == 'y':
+                shutil.move(src, des)
+                if file_name == 'pn2_has_edge_covered':
+                    cust_audio_data_phase_coverage_model_changed = True
+    if c == 'y':
+        with open(file_dir, 'wb') as f:
+            pickle.dump(data, f)
+
+def cov_self_check(input_dir=PATTERN_DIR):
+    with open('env/cust_audio_data_phase_coverage_model.sv', 'r') as f:
+        coverage = f.readlines()
+    cov_arr = []
+    for cov in coverage:
+        if cov.find('bins C_') != -1:
+            #print(cov)
+            cov_list = cov.split('C_')[-1].split(' ')[0].split('_')
+            cov_list_map = map(int, cov_list)
+            cov_list_int = list(cov_list_map)
+            cov_arr.append(cov_list_int)
+    #print(cov_arr, len(cov_arr))
+    print('coverage bins num:', len(cov_arr))
+    cov_check = [0]*len(cov_arr)
+
+    check_pass = True
+
+    if(os.path.isdir(input_dir)):
+        for dirPath, dirNames, fileNames in os.walk(input_dir):
+            for f in fileNames:
+                with open(os.path.join(dirPath, f), 'r') as ptr_f:
+                    pattern = ptr_f.readlines()
+
+                for item in pattern:
+                    if item.find('expect_path_log_0') != -1:
+                        path_0_str = item.split('"')[1].split(' ')
+                        path_0_map = map(int, path_0_str)
+                        path_0 = list(path_0_map)
+                        #print(path_0)
+                        
+                    if item.find('expect_path_log_1') != -1:
+                        path_1_str = item.split('"')[1].split(' ')
+                        path_1_map = map(int, path_1_str)
+                        path_1 = list(path_1_map)
+                        #print(path_1)
+                    
+                    if item.find("combination_idx = '") != -1:
+                        combination_idx_str = item.split('{')[-1].split('}')[0].replace(',', '').split(' ')
+                        combination_idx_map = map(int, combination_idx_str)
+                        combination_idx = list(combination_idx_map)
+                        #print(combination_idx)
+
+                for idx in combination_idx:
+                    first_node = cov_arr[idx][0]
+                    second_node = cov_arr[idx][1]
+                    #print(cov_arr[idx])
+                    
+                    success_flag = False
+                    for i in range(len(path_0)):
+                        if path_0[i] == first_node:
+                            for j in range(i, len(path_0)):
+                                if path_0[j] == second_node:
+                                    success_flag = True
+                                    break
+                    
+                    if success_flag == False:
+                        for a in range(len(path_1)):
+                            if path_1[a] == first_node:
+                                for b in range(a, len(path_1)):
+                                    if path_1[b] == second_node:
+                                        success_flag = True
+                                        break
+                    
+                    if success_flag == False:
+                        print('coverage ERROR!!!!')
+                        print('filename:', f)
+                        print('path 0:', path_0)
+                        print('path 1:', path_1)
+                        print('not found combination_idx:', idx)
+                        exit()
+                    else:
+                        cov_check[idx] = 1
+        
+    #print(cov_check)
+    for i in range(len(cov_check)):
+        if cov_check[i] == 0:
+            print('uncovered bins idx:', i)
+            check_pass = False
+
+    if check_pass:
+        print('coverage self check PASS')
+    else:
+        print('coverage self check FAIL!!')
+
+
 
 if __name__ == '__main__':
     ################################################################## main ##################################################################
-    '''
-    components_parsing_rule = get_components_parsing_rule()
-    components_info = get_components_info(components_parsing_rule)
-    components_info = make_distinct(components_info)
-    components_info = to_lower(components_info)
-    components_info = sort_components_info(components_info)
-    components_info = set_components_id(components_info)
-    '''
 
     data_phase_array_data_dir = 'input/data_phase/'
 
@@ -1145,204 +1287,98 @@ if __name__ == '__main__':
         os.mkdir('input/data_phase/')
     if(os.path.isdir('input/data_phase/backup/') == False):
         os.mkdir('input/data_phase/backup/')
-        
 
-    # find MIX_xto1, auto gen x new blocks
-    # old_component_num = len(components_info)
-    # new_block_cou = old_component_num
-    # mix_permuation_pair = []                     # these pairs are impossible to construct to a path
-    # for i in range(old_component_num):
-    #     if components_info[i]['Type'].find('MIX') != -1:
-    #         mix_num = int(components_info[i]['Type'].split('MIX_')[-1].split('to')[0])
-    #         per_pair = []
-    #         for mix_idx in range(mix_num):
-    #             mix_input_name = components_info[i]['Inputs'][mix_idx]
-    #             components_info[i]['Inputs'][mix_idx] = mix_input_name + '_new'
-    #             tmp_dict = {'Type':'Block', 'IS_REVERSE':False, 'Outputs':[mix_input_name + '_new'], 'Selects':[], 'Inputs':[mix_input_name], 'NODE_ID':new_block_cou}
-    #             components_info.append(tmp_dict)
-    #             per_pair.append(new_block_cou)
-    #             new_block_cou += 1
-    #         for item in permutations(per_pair, 2):
-    #             mix_permuation_pair.append(item)
-    # print(mix_permuation_pair)
-
-    '''
-    print('output_components_info...')
-    output_components_info(components_info)
-    print('done\n')
-
-    print('parse_register_file...')
-    all_register_info = parse_register_file()
-    if not all_register_info:
-        ERROR_MESSAGE('all_register_info not prepared')
-    else:
-        output_register_info(all_register_info)
-        print('done\n')
-
-    ####################################### check flow #######################################
-    print('check_single_output...')
-    CHECK_PASS = check_single_output(components_info)
-    CHECK_ALL_PASS = check_merge(CHECK_PASS, CHECK_PASS)
-
-    print('check_output_distinct...')
-    CHECK_PASS = check_output_distinct(components_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_output_connection...')
-    CHECK_PASS = check_output_connection(components_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_input_connection...')
-    CHECK_PASS = check_input_connection(components_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_select_and_input_num...')
-    CHECK_PASS = check_select_and_input_num(components_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_select_in_all_register_info...')
-    CHECK_PASS = check_select_in_all_register_info(components_info, all_register_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_select_distinct...')
-    CHECK_PASS = check_select_distinct(components_info)
-    CHECK_PASS = True
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-
-    print('check_components_info_and_all_register_info...')
-    CHECK_PASS = check_components_info_and_all_register_info(components_info, all_register_info)
-    CHECK_ALL_PASS = check_merge(CHECK_ALL_PASS, CHECK_PASS)
-    ####################################### check flow #######################################
     
-    print('output_mux_gentop...')
-    output_mux_gentop(components_info)
-    print('done\n')
-
-    if CHECK_ALL_PASS:
-        PASS_MESSAGE('Check all pass\n')
-        
-        if not FOR_SD_CHECK_ONLY:  
-            print('make_legal...')
-            components_info = make_legal(components_info)
-            print('done\n')
-        else:
-            print('make_legal...')
-            components_info = make_legal(components_info)
-            print('done\n')
-                
-        if not FOR_SD_CHECK_ONLY:
-            print('gen_content_of_cust_system_configuration...')
-            gen_content_of_cust_system_configuration(components_info)
-            print('done\n')
-            
-            print('gen_audio_data_path_golden_pattern...')
-            gen_audio_data_path_golden_pattern(components_info)
-            gen_audio_data_phase_golden_pattern(components_info)
-            print('done\n')
-            
-        if not FOR_SD_CHECK_ONLY:
-            print('gen_transition_model...')
-            components_info = gen_transition_model(components_info)
-            print('done\n')
-        else:
-            components_info = gen_transition_model(components_info, output_enable = False)
-            
-        print('output_components_info...')
-        output_components_info(components_info)
-        print('done\n')
-        
-
-            
-        print('output_components_info_xlsx...')
-        output_components_info_xlsx(components_info)
-        print('done\n')
-            
-        if not FOR_SD_CHECK_ONLY:   
-            print('gen_dut_wrapper...')
-            gen_dut_wrapper(components_info)
-            print('done\n')
-            
-            print('gen_system_base_test...')
-            gen_system_base_test(components_info)
-            print('done\n')
-            
-            print('gen_interface...')
-            gen_interface(components_info)
-            print('done\n')
-            
-            print('gen_transaction...')
-            gen_transaction(components_info)
-            print('done\n')
-            
-            print('gen_monitor...')
-            gen_monitor(components_info)
-            print('done\n')
-            
-            print('gen_coverage...')
-            gen_coverage(components_info)
-            print('done\n')
-    '''
     components_info = read_components_info()
 
-    #output_components_info(components_info)
+
+    # find MIX_XXXX components, auto gen x new blocks
+    mix_permuation_pair = []                              # these pairs are impossible to construct a stereo path
+    mix_inputs_components = []                            # these components will add in data_phase_permutation_nodes array
+    for i in range(len(components_info)):
+        if components_info[i]['Type'].find('MIX') != -1:
+            mix_num = len(components_info[i]['Inputs'])   # how many input nodes in this mix
+            # print(mix_num)
+            permutation_pair = []
+            for mix_idx in range(mix_num):
+                mix_input_name = components_info[i]['Inputs'][mix_idx]
+                for j in range(len(components_info)):
+                    if components_info[j]['Outputs'] == [mix_input_name]:
+                        permutation_pair.append(j)
+                        mix_inputs_components.append(j)
+            for item in permutations(permutation_pair, 2):
+                mix_permuation_pair.append(item)
+    # print(mix_permuation_pair)
+    # print(mix_inputs_components)
+    # print(len(mix_inputs_components), len(set(mix_inputs_components)))
+
+    if len(mix_inputs_components) != len(set(mix_inputs_components)):
+        print('ERROR!! mix inputs repeat')
+        exit()
 
     print('gen_grapth...')
     G, color_map, edge_labels = gen_grapth(components_info)
     print('done\n')
-    
-
-    #exit()
 
 
-
-
-
-    input_node_index = []
-    output_node_index = []
+    input_node_id = []
+    output_node_id = []
     for i in range(len(components_info)):
         if components_info[i]['Type'] == 'Input_Node':
-            input_node_index.append(i)
+            input_node_id.append(i)
         if components_info[i]['Type'] == 'Output_Node':
-            output_node_index.append(i)
+            output_node_id.append(i)
 
-    print(output_node_index)
-    stereo_component_dict = gen_stereo_componenet_dict()
+    input_output_stereo_dict = gen_input_output_stereo_dict()
+    mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict = gen_mux_stereo_dict(components_info)
 
-    #print(G.nodes)
-
-    phase_node = []
+    data_phase_permutation_nodes = []
     for i in range(len(components_info)):
         if components_info[i]['Type'] == 'Block' or components_info[i]['Type'] == 'SRC' or components_info[i]['Type'] == 'Input_Node':
-            #print(components_info[i]['Type'])
-            phase_node.append(i)
-    print('------------------------------------------------------------')
-    print('permutation node', phase_node)
-    print('permutation node numbers : ' + str(len(phase_node)))
-    per_list = permutations(phase_node, 2)
+            # print(components_info[i]['Type'])
+            data_phase_permutation_nodes.append(i)
+
+    for item in mix_inputs_components:
+        if item not in data_phase_permutation_nodes:
+            data_phase_permutation_nodes.append(item)
     
-    pn2_has_edge = []
-    for item in list(per_list):
-        #print(item)
-        if nx.has_path(G, item[0], item[1]) and item not in mix_permuation_pair:
-            # if node0 -> node1 has path
-            # mix_permutation_pair are impossible to construct to a path
-            if nx.has_path(G, item[1], item[0]):
-                # 如果node1 -> node0(反向)有path, 而且shortest path長度為2~3之間(可自行調整數字3)
-                short_tmp = nx.shortest_path(G, item[1], item[0])
-                if len(short_tmp) >= 2 and len(short_tmp) <= 3:
-                    cou = 0
-                    for all_path in nx.all_simple_paths(G, item[1], item[0]):
-                        # 計算所有路徑, 如果只有唯一路徑, cou == 1, 否則 cou >= 2
-                        if cou >= 2:
-                            break
-                        cou += 1
-                    if cou == 1:
-                        # 如果node1 -> node0(反向)只存在唯一路徑, 代表node0 -> node1(正向)不可能找的到path通過 output -> node0 -> node1-> input
-                        #print(len(short_tmp), short_tmp)
-                        continue
-            
-            pn2_has_edge.append([item[0], item[1]])
-    print('permutation edges number : ' + str(len(phase_node) * len(phase_node)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
+    print('------------------------------------------------------------')
+    print('permutation node', data_phase_permutation_nodes)
+    print('permutation node numbers : ' + str(len(data_phase_permutation_nodes)))
+    per_list = permutations(data_phase_permutation_nodes, 2)
+
+    print('------------------------------------------------------------')
+    print('check permutation pairs has edge...')
+    
+    if input('Read data from files?(y/n) ').lower() == 'y':
+        pn2_has_edge = read_pickle('pn2_has_edge')
+    else:
+        pn2_has_edge = []
+        for item in list(per_list):
+            #print(item)
+            if nx.has_path(G, item[0], item[1]) and item not in mix_permuation_pair:
+                # if node0 -> node1 has path
+                # mix_permutation_pair are impossible to construct to a path
+                if nx.has_path(G, item[1], item[0]):
+                    # 如果node1 -> node0(反向)有path, 而且shortest path長度為2~3之間(可自行調整數字3)
+                    short_tmp = nx.shortest_path(G, item[1], item[0])
+                    if len(short_tmp) >= 2 and len(short_tmp) <= 3:
+                        cou = 0
+                        for all_path in nx.all_simple_paths(G, item[1], item[0]):
+                            # 計算所有路徑, 如果只有唯一路徑, cou == 1, 否則 cou >= 2
+                            if cou >= 2:
+                                break
+                            cou += 1
+                        if cou == 1:
+                            # 如果node1 -> node0(反向)只存在唯一路徑, 代表node0 -> node1(正向)不可能找的到path通過 output -> node0 -> node1-> input
+                            #print(len(short_tmp), short_tmp)
+                            continue
+                
+                pn2_has_edge.append([item[0], item[1]])
+
+        dump_pickle('pn2_has_edge', pn2_has_edge)
+    
+    print('permutation edges number : ' + str(len(data_phase_permutation_nodes) * len(data_phase_permutation_nodes)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
     print('------------------------------------------------------------')
 
     ########################## find path ##########################
@@ -1378,7 +1414,7 @@ if __name__ == '__main__':
         print('------------------------------------------------------------')
         arr_dict = dict()
         start_time = time.time()
-        for output_node in output_node_index:
+        for output_node in output_node_id:
             a_b = []
             if nx.has_path(G, output_node, not_found_path_node[i][0]) and nx.has_path(G, not_found_path_node[i][0], not_found_path_node[i][1]):
                 # for node in nx.all_simple_paths(G, output_node, not_found_path_node[i][0]):
@@ -1398,9 +1434,9 @@ if __name__ == '__main__':
 
         print(str(time.time() - start_time) + ' sec')
 
-        for output_node in output_node_index:
+        for output_node in output_node_id:
             print('Try Output Node :', output_node)
-            for input_node in input_node_index:
+            for input_node in input_node_id:
                 if check_per_path(G, output_node, not_found_path_node[i][0], not_found_path_node[i][1], input_node):
                     if len(arr_dict[output_node]) == 0:
                         continue
@@ -1430,7 +1466,7 @@ if __name__ == '__main__':
                     if find_path_flag == False:
                         continue
                     print(tmp_mix)
-                    find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_index, stereo_component_dict, tmp_mix)
+                    find_path_flag, tmp_mix_stereo = find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict, mux_uniq_stereo_dict, mux_duplicate_stereo_dict, mux_non_pair_stereo_dict, tmp_mix)
                     if find_path_flag == False:
                         continue
                     find_path.append([tmp_mix, tmp_mix_stereo])
@@ -1479,7 +1515,7 @@ if __name__ == '__main__':
         for path_idx in range(len(greedy_choose_path)):
             pn2_idx = []
             for pair_idx in range(len(pn2_has_edge_covered)):
-                mono_0_path = find_path[path_idx][0]
+                mono_0_path = greedy_choose_path[path_idx][0]
                 for mono_0_pre in range(len(mono_0_path)):
                     if pn2_has_edge_covered[pair_idx][0] == mono_0_path[mono_0_pre]:
                         for mono_0_post in range(mono_0_pre+1, len(mono_0_path)):
@@ -1487,7 +1523,7 @@ if __name__ == '__main__':
                                 #print('mono_0 find pair :', pair_idx, pn2_has_edge_covered[pair_idx])
                                 pn2_idx.append(pair_idx)
 
-                mono_1_path = find_path[path_idx][1]
+                mono_1_path = greedy_choose_path[path_idx][1]
                 for mono_1_pre in range(len(mono_1_path)):
                     if pn2_has_edge_covered[pair_idx][0] == mono_1_path[mono_1_pre]:
                         for mono_1_post in range(mono_1_pre+1, len(mono_1_path)):
@@ -1504,7 +1540,6 @@ if __name__ == '__main__':
         dump_pickle('pattern_combination_idx', pattern_combination_idx)
         print('Save data completely !!')
     
-    #print(greedy_choose_path)
     print('------------------------------------------------------------')
     print('pattern num :', len(greedy_choose_path))
     print('pn2_has_edge_covered :', len(pn2_has_edge_covered))
@@ -1524,20 +1559,22 @@ if __name__ == '__main__':
         f.write(path_log_str)
 
 
-    gen_coverage_data_phase(pn2_has_edge_covered)
+    print('------------------------------------------------------------')
+    if cust_audio_data_phase_coverage_model_changed:
+        gen_coverage_data_phase(pn2_has_edge_covered)
+        print('auto gen new cust_audio_data_phase_coverage_model.sv file')
+    else:
+        print('cust_audio_data_phase_coverage_model.sv didnt change')
 
 
-    control = input("Please edit the reg_info.xlsx and in_info.xlsx out_info.xlsx then press C(continue) to gen patterns or press E(exit): ")
-    if control.lower() == 'c':
+    control = input("Please edit the reg_info.xlsx and in_info.xlsx out_info.xlsx then press y to gen patterns: ")
+    if control.lower() == 'y':
         print('pattern_auto_gen...')
         pattern_auto_gen(greedy_choose_path, components_info, pattern_combination_idx)
         print('done')
-    exit()
-    control = input('gen coveragereport, y(es) or n(o)?')
+    
+    control = input('coverage self check, y or n:')
     if control.lower() == 'y':
-        print('gen_coverage_report')
-        # gen_coverage_report(components_parsing_rule, edge_covered_map, all_path, chosen_path_idx_list, components_info, all_register_info)
-        print('done')
-                
+        cov_self_check()
 
     ################################################################## main ##################################################################
