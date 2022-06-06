@@ -688,13 +688,13 @@ def gen_mux_stereo_dict(components_info):
     print('total mux select signal num:', len(mux_sel_signal_arr))
     print('non repeat mux select signal num:', len(set(mux_sel_signal_arr)))
 
-    seen_ = set()
+    seen = set()
     dupes = set()
     for x in mux_sel_signal_arr:
-        if x in seen_:
+        if x in seen:
             dupes.add(x)
         else:
-            seen_.add(x)
+            seen.add(x)
 
     uniq = list(set(mux_sel_signal_arr) - dupes)
     dupes = list(dupes)
@@ -734,9 +734,9 @@ def gen_mux_stereo_dict(components_info):
         #     print(uniq[i], cou)
         # exit()
 
-    mux_uniq_stereo_dict = dict()
-    mux_duplicate_stereo_dict = dict()
-    mux_non_pair_stereo_dict = dict()
+    mux_uniq_stereo_dict = dict()                 # two stereo mux select signals are different (unique), ex: XXX_sel_r, XXX_sel_l
+    mux_duplicate_stereo_dict = dict()            # two stereo mux select signals are same (duplicate), ex: XXX_sel, XXX_sel
+    mux_non_pair_stereo_dict = dict()             # cannot find stereo pairs
     find_pairs_names = []
 
     for item in combinations(uniq, 2):
@@ -745,14 +745,13 @@ def gen_mux_stereo_dict(components_info):
         if len_0 == len_1:
             S = SequenceMatcher(None, item[0], item[1])
             r = S.ratio()
-            if len_0 - (r*(len_0*2)/2) <= 1.0:
+            # print(len_0 - (r*(len_0*2)/2))
+            if len_0 - (r*(len_0*2)/2) <= 1.0:    # item[0] 跟 item[1] 字串只差一個字母
                 #print(item)
-                #print(len_0 - (r*(len_0*2)/2))
-                diff_idx = S.get_matching_blocks()[0][2]
+                diff_idx = S.get_matching_blocks()[0][2] # 相差字母的位置
                 #print(diff_idx)
                 if item[0][diff_idx] == 'l':
                     if item[1][diff_idx] == 'r':
-                        #print('!!!!!!')
                         mux_uniq_stereo_dict[item[0]] = item[1]
                         mux_uniq_stereo_dict[item[1]] = item[0]
                         find_pairs_names.append(item[0])
@@ -760,7 +759,6 @@ def gen_mux_stereo_dict(components_info):
                         
                 if item[0][diff_idx] == 'r':
                     if item[1][diff_idx] == 'l':
-                        #print('!!!!!!')
                         mux_uniq_stereo_dict[item[0]] = item[1]
                         mux_uniq_stereo_dict[item[1]] = item[0]
                         find_pairs_names.append(item[0])
@@ -818,10 +816,9 @@ def find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict
 
     while(path_1_len != len(path_0)):
         try:
-            #print(path_1)
             path_0_next_sel_idx = components_info[path_0[path_1_len-1]]['select'].index(path_0[path_1_len])
             path_1_next_sel_id  = components_info[path_1[path_1_len-1]]['select'][path_0_next_sel_idx]
-            if path_1_next_sel_id == -1:
+            if path_1_next_sel_id == -1:                                                     # -1 means this select is null
                 success_flag = False
                 break
             
@@ -852,16 +849,6 @@ def find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict
                     if mux_non_pair_stereo_dict[path_0_sel_signal] != path_1_sel_signal:
                         success_flag = False
                         break
-                '''
-                if path_0_sel_signal != path_1_sel_signal:              # path_0 and path_1 MUX select signal are different now
-                    if path_1_next_sel_id in input_node_id:                    # if next sel node is input node(end of path) -> break while loop
-                        path_1.append(path_1_next_sel_id)
-                        break
-                    else:
-                        #print('illegal :  MUX sel diff !!!!!!!!!!!!!!')
-                        success_flag = False
-                        break
-                '''
 
             path_1.append(path_1_next_sel_id)
             path_1_len += 1
