@@ -17,14 +17,11 @@ from difflib import SequenceMatcher
 ########################## global settings ##########################
 SIGNATURE = '/*********** Data Phase Auto Gen Tools ***********/\n'
 COMPONENT_NAME_COLUMN_NAME = '主圖形名稱'
-BACKUP_DIR  = 'backup'
 INPUT_DIR   = 'input'
-ENV_DIR     = 'env'
-CONTENT_DIR = 'env_content'
+ENV_DIR     = 'data_phase_env'
 DATA_DIR    = 'data'
 PATTERN_DIR = 'audio_data_phase_auto_gen_patterns'
 CHECK_LOG_DIR = 'check_log'
-REPORT_DIR  = 'report'
 NULL_NODE_ID = -1
 TAB = '    '
 SELECT_SIGNAL_RESERVED = 'reserved'
@@ -163,7 +160,7 @@ def gen_grapth(components_info):
             
             
     return G, color_map, edge_labels
-    
+
 def get_edges_from_path(path):
     edges = []
     for idx in range(len(path)-1):
@@ -177,7 +174,6 @@ def path_list_to_string(path):
     expect_path_log = expect_path_log[1:]
     
     return expect_path_log
-
 
 def parse_register_file(input_file_name = 'all_register_dump_for_dv.txt', input_dir = INPUT_DIR):
     all_register_info = {}
@@ -209,8 +205,7 @@ def parse_register_file(input_file_name = 'all_register_dump_for_dv.txt', input_
             all_register_info.update({ Signal: {'Addr': Addr, 'Bits_Indices': Bits_Indices, 'Length': delta}})
     
     return all_register_info
-    
-    
+
 def set_value_reverse(set_value, IS_REVERSE):
     return_value = ''
     
@@ -228,7 +223,6 @@ def set_value_reverse(set_value, IS_REVERSE):
                 
     return return_value
 
-    
 def add_signal_settings(CONTENTS, select_signal, set_value, signal_setting, node_id = -1, select_node_id = -1, IS_DEFAULT_SETTING = False):
     signal_setting = signal_setting.replace('set_value', set_value)
     
@@ -246,7 +240,7 @@ def add_signal_settings(CONTENTS, select_signal, set_value, signal_setting, node
         contents_append_endl(CONTENTS, '')
         
     return CONTENTS
-    
+
 def get_signal_default_settings(CONTENTS, node, SIGNAL_SETTINGS):
 
     select_signal = ''
@@ -289,9 +283,8 @@ def get_signal_default_settings(CONTENTS, node, SIGNAL_SETTINGS):
             CONTENTS = add_signal_settings(CONTENTS, select_signal, set_value, signal_setting, IS_DEFAULT_SETTING = True)
                 
     return CONTENTS
-    
+
 def get_signal_setting(node_id, select_node_id, idx, components_info, SIGNAL_SETTINGS):
-    
     node = components_info[node_id]
     select_node = components_info[select_node_id]
     
@@ -342,8 +335,7 @@ def get_signal_setting(node_id, select_node_id, idx, components_info, SIGNAL_SET
                     set_value = set_value_reverse('0', node['IS_REVERSE'])
                 
     return select_signal, set_value, signal_setting
-    
-    
+
 def parse_in_and_out_info(info_files, input_dir):
     VIP_DEFINE_SETTINGS = {}
     VIP_ENABLE_SETTINGS = {}
@@ -373,7 +365,7 @@ def parse_in_and_out_info(info_files, input_dir):
                             VIP_ENABLE_SETTINGS.update({ row[0].value : VIP_ENABLE_SETTING })
     
     return VIP_DEFINE_SETTINGS, VIP_ENABLE_SETTINGS
-    
+
 def parse_reg_info(reg_info_file, input_dir):
     SIGNAL_SETTINGS = {}
     
@@ -418,8 +410,7 @@ def parse_reg_info(reg_info_file, input_dir):
             SIGNAL_SETTINGS.update( {signal : {'cmd_combo': cmd_combo, 'length': delta}} )
             
     return SIGNAL_SETTINGS
-    
-    
+
 def cnt_SRC_in_path(path, components_info):
     SRC_NAME = 'SRC'
     SRC_cnt = 0.0
@@ -429,8 +420,6 @@ def cnt_SRC_in_path(path, components_info):
             SRC_cnt += 1.0
     
     return math.ceil(SRC_cnt / 2.0)
-        
-    
 
 def pattern_auto_gen(pattern_path, components_info, combination_idx, in_and_out_info_files = ['in_info.xlsx', 'out_info.xlsx'], reg_info_file = 'reg_info.xlsx', output_dir = PATTERN_DIR, input_dir = INPUT_DIR):
     VIP_DEFINE_SETTINGS, VIP_ENABLE_SETTINGS = parse_in_and_out_info(in_and_out_info_files, input_dir)
@@ -643,7 +632,6 @@ def pattern_auto_gen(pattern_path, components_info, combination_idx, in_and_out_
         
         output_file_name = class_name + '.sv'
         write_contents_to_file(CONTENTS, output_file_name, output_dir, ENDL = '')
-     
 
 def read_components_info(input_file_name = 'components_info.txt', input_dir = DATA_DIR):
     components_info = []
@@ -652,7 +640,7 @@ def read_components_info(input_file_name = 'components_info.txt', input_dir = DA
     with open(input_file_name) as txt_file:
         for line in txt_file.readlines():
             component_info = json.loads(line[line.find('{'):-1])
-            #component_info.pop('select', None)
+            # component_info.pop('select', None)
             components_info.append(component_info)
 
     return components_info
@@ -962,12 +950,6 @@ def permutation_find_path(G, node_0, node_1, node_2, node_3=None):
                     break
             if success_flag == True:
                     break
-
-    # if cou > 1:
-    #     print('OMG')
-    #     print(cou)
-    # if success_flag == False or len(set(mix)) != len(mix):
-    #     print('SECOND METHOD NOT FOUND')
     
     return success_flag, mix
 
@@ -1057,9 +1039,9 @@ def gen_find_path(pn2_has_edge):
 
 def greedy_pick_path(find_path, pn2_has_edge):
     greedy_choose_path = []          # 用greedy演算法選到的path
-    max_match_info = [0, 0, []]      # [max_num, find_path idx, covered_pairs_idx array]
-    useless_path = []                # 存放 在find_path中 沒有用的path idx (len(covered_pairs_idx)==0)
-    last_max_num = -1                # 上一次找到的 max_num 值
+    max_match_info = [0, 0, []]      # [max_match_num, find_path idx, covered_pairs_idx array]
+    useless_path = []                # 存放在 find_path 中沒有用的 path idx (len(covered_pairs_idx)==0)
+    last_max_match_num = -1          # 上一次找到的 max_match_num 值
     start_idx = 0                    # 從 start_idx 開始找 find_path for loop
     DEF_MAX_VAULE = 99999999         # 
     end_idx = DEF_MAX_VAULE
@@ -1102,7 +1084,7 @@ def greedy_pick_path(find_path, pn2_has_edge):
                 max_match_info[0] = len(covered_pairs_idx)
                 max_match_info[1] = path_idx
                 max_match_info[2] = covered_pairs_idx
-                if last_max_num == max_match_info[0]:    # 如果目前找到的 max_num 是上一次找到的 max_num(last_max_num) 就可以不用繼續找了
+                if last_max_match_num == max_match_info[0]:     # 如果目前找到的 max_match_num 是上一次找到的 max_match_num(last_max_match_num) 就可以不用繼續找了，可直接把這個path存起來
                     break
             elif end_idx != DEF_MAX_VAULE and max_match_info[0] == len(covered_pairs_idx) and max_match_info[1] > path_idx:
                 max_match_info[0] = len(covered_pairs_idx)
@@ -1112,23 +1094,23 @@ def greedy_pick_path(find_path, pn2_has_edge):
             # print(covered_pairs_idx)
             # print(len(covered_pairs_idx))
         
-        if max_match_info[0] == 0:       # can't be found uncover_pairs anymore
+        if max_match_info[0] == 0:       # cannot found uncover_pairs anymore
             if start_idx != 0:
                 start_idx = 0
                 continue
             else:
                 break
         
-        if last_max_num != max_match_info[0] and start_idx != 0:
+        if last_max_match_num != max_match_info[0] and start_idx != 0:    # 代表這次尋找是從中間段開始搜尋，但已經找不到 last_max_match_num 的匹配數量了
             end_idx = start_idx
             start_idx = 0
             continue
 
         
-        
-
-        last_max_num = max_match_info[0]                 # update last_max_num value
+        last_max_match_num = max_match_info[0]                 # update last_max_match_num value
         start_idx = max_match_info[1] - len(useless_path)
+        if start_idx < 0:
+            start_idx = 0
         end_idx = DEF_MAX_VAULE
 
         greedy_choose_path.append(remain_path[max_match_info[1]])
@@ -1161,6 +1143,7 @@ def read_pickle(file_name):
         exit()
 
 def dump_pickle(file_name, data):
+    global cust_audio_data_phase_coverage_model_changed
     file_dir = data_phase_array_data_dir + file_name + '.pickle'
     c = 'y'
     if os.path.exists(file_dir):
@@ -1175,12 +1158,15 @@ def dump_pickle(file_name, data):
                 shutil.move(src, des)
                 if file_name == 'pn2_has_edge_covered':
                     cust_audio_data_phase_coverage_model_changed = True
+    else:
+        if file_name == 'pn2_has_edge_covered':
+            cust_audio_data_phase_coverage_model_changed = True
     if c == 'y':
         with open(file_dir, 'wb') as f:
             pickle.dump(data, f)
 
 def cov_self_check(input_dir=PATTERN_DIR):
-    with open('env/cust_audio_data_phase_coverage_model.sv', 'r') as f:
+    with open(ENV_DIR + '/cust_audio_data_phase_coverage_model.sv', 'r') as f:
         coverage = f.readlines()
     cov_arr = []
     for cov in coverage:
@@ -1279,7 +1265,7 @@ if __name__ == '__main__':
     components_info = read_components_info()
 
 
-    # find MIX_XXXX components, auto gen x new blocks
+    # find MIX_XXXX components
     mix_permuation_pair = []                              # these pairs are impossible to construct a stereo path
     mix_inputs_components = []                            # these components will add in data_phase_permutation_nodes array
     for i in range(len(components_info)):
@@ -1300,8 +1286,7 @@ if __name__ == '__main__':
     # print(len(mix_inputs_components), len(set(mix_inputs_components)))
 
     if len(mix_inputs_components) != len(set(mix_inputs_components)):
-        print('ERROR!! mix inputs repeat')
-        exit()
+        print('Warning!! mix inputs repeat')
 
     print('gen_grapth...')
     G, color_map, edge_labels = gen_grapth(components_info)
@@ -1365,7 +1350,7 @@ if __name__ == '__main__':
 
         dump_pickle('pn2_has_edge', pn2_has_edge)
     
-    print('permutation edges number : ' + str(len(data_phase_permutation_nodes) * len(data_phase_permutation_nodes)-1) + ', has_edge : ' + str(len(pn2_has_edge)))
+    print('permutation pairs num: ' + str(len(data_phase_permutation_nodes) * len(data_phase_permutation_nodes)-1) + ', has_edge pairs num: ' + str(len(pn2_has_edge)))
     print('------------------------------------------------------------')
 
     ########################## find path ##########################
@@ -1542,7 +1527,7 @@ if __name__ == '__main__':
         for i in range(len(pattern_combination_idx[path_idx])):
             c_idx = pattern_combination_idx[path_idx][i]
             path_log_str += 'C_' + str(pn2_has_edge_covered[c_idx][0]) + '_' + str(pn2_has_edge_covered[c_idx][1]) + ' : ' + str(c_idx) + '\n'
-    with open('check_log/phase_log.txt', 'w') as f:
+    with open(CHECK_LOG_DIR + '/phase_log.txt', 'w') as f:
         f.write(path_log_str)
 
 
