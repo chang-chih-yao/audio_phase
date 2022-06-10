@@ -447,6 +447,9 @@ def pattern_auto_gen(pattern_path, components_info, combination_idx, in_and_out_
             contents_append_endl(CONTENTS, VIP_DEFINE_SETTINGS[input_signal])
         if output_signal in VIP_DEFINE_SETTINGS:
             contents_append_endl(CONTENTS, VIP_DEFINE_SETTINGS[output_signal])
+
+        # contents_append_endl(CONTENTS, 'import "DPI-C" context function int uvm_hdl_force(string path, uvm_hdl_data_t value);')
+        # contents_append_endl(CONTENTS, 'import "DPI-C" context function int uvm_hdl_release(string path);')
             
         contents_append_endl(CONTENTS, 'class {} extends audio_data_phase_golden;'.format(class_name))
         contents_append_tab_endl(CONTENTS, '`uvm_component_utils({})'.format(class_name))
@@ -846,13 +849,14 @@ def find_stereo_path(G, components_info, input_node_id, input_output_stereo_dict
             break
 
 
-    # 檢查兩個stereo paths的所有node是否都是不相同的
+    # 檢查兩個 stereo paths 的所有 node 數量 是否相同
     if success_flag:
         if len(set(path_0+path_1)) != len(path_0+path_1):
-            for item in (set(path_0) & set(path_1)):       # set(path_0) & set(path_1) -> path_0 跟 path_1 重複的點的集合
-                if item not in input_node_id:
-                    #print('Stereo path found repeated node not in input_node list !!!!')
-                    success_flag = False
+            success_flag = False
+            # for item in (set(path_0) & set(path_1)):       # set(path_0) & set(path_1) -> path_0 跟 path_1 重複的點的集合
+            #     if item not in input_node_id:
+            #         print('Stereo path found repeated node not in input_node list !!!!')
+            #         success_flag = False
 
     if success_flag:
         path_1_expect_input_node_name = input_output_stereo_dict[components_info[path_0[-1]]['Outputs'][0]]          # find path_1 input node name
@@ -1274,13 +1278,17 @@ if __name__ == '__main__':
             # print(mix_num)
             permutation_pair = []
             for mix_idx in range(mix_num):
-                mix_input_name = components_info[i]['Inputs'][mix_idx]
-                for j in range(len(components_info)):
-                    if components_info[j]['Outputs'] == [mix_input_name]:
-                        permutation_pair.append(j)
-                        mix_inputs_components.append(j)
-            for item in permutations(permutation_pair, 2):
-                mix_permuation_pair.append(item)
+                if components_info[i]['select'][mix_idx] != -1:
+                    permutation_pair.append(components_info[i]['select'][mix_idx])
+                    mix_inputs_components.append(components_info[i]['select'][mix_idx])
+                # mix_input_name = components_info[i]['Inputs'][mix_idx]
+                # for j in range(len(components_info)):
+                #     if components_info[j]['Outputs'] == [mix_input_name]:
+                #         permutation_pair.append(j)
+                #         mix_inputs_components.append(j)
+            if len(permutation_pair) >= 2:
+                for item in permutations(permutation_pair, 2):
+                    mix_permuation_pair.append(item)
     # print(mix_permuation_pair)
     # print(mix_inputs_components)
     # print(len(mix_inputs_components), len(set(mix_inputs_components)))
@@ -1313,6 +1321,10 @@ if __name__ == '__main__':
     for item in mix_inputs_components:
         if item not in data_phase_permutation_nodes:
             data_phase_permutation_nodes.append(item)
+
+    if len(data_phase_permutation_nodes) != len(set(data_phase_permutation_nodes)):
+        print('Error!! data_phase_permutation_nodes repeat')
+        exit()
     
     print('------------------------------------------------------------')
     print('permutation node', data_phase_permutation_nodes)
